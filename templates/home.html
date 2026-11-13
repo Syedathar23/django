@@ -1,0 +1,821 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+/* ═══════════════════════════════════════════════════════════
+   HOME PAGE — Capstone-Style Social Media Analytics Report
+   ═══════════════════════════════════════════════════════════ */
+
+/* Hero Search */
+.hero-wrap {
+  background: linear-gradient(135deg, #0d1117 0%, #161b22 50%, #0d1117 100%);
+  border-bottom: 1px solid rgba(88,166,255,0.15);
+  padding: 3rem 2rem 2.5rem;
+  text-align: center;
+}
+.hero-wrap .brand-badge {
+  display: inline-flex; align-items: center; gap: .5rem;
+  background: rgba(88,166,255,0.08); border: 1px solid rgba(88,166,255,0.2);
+  border-radius: 50px; padding: .35rem 1rem; font-size: .78rem;
+  color: #58a6ff; text-transform: uppercase; letter-spacing: 1.2px;
+  margin-bottom: 1.2rem;
+}
+.hero-title {
+  font-size: clamp(1.9rem, 4vw, 3rem); font-weight: 800;
+  background: linear-gradient(135deg, #ffffff 30%, #58a6ff 70%, #7c3aed 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  margin-bottom: .6rem;
+}
+.hero-sub { color: #8b949e; font-size: 1.05rem; margin-bottom: 2rem; }
+
+/* Search Bar */
+.search-form-wrap {
+  max-width: 680px; margin: 0 auto;
+}
+.search-bar {
+  display: flex; gap: 0; border-radius: 14px;
+  overflow: hidden; border: 2px solid rgba(88,166,255,0.35);
+  background: #161b22; box-shadow: 0 0 30px rgba(88,166,255,0.1);
+  transition: border-color .2s;
+}
+.search-bar:focus-within { border-color: #58a6ff; }
+.search-input {
+  flex: 1; background: transparent; border: none; outline: none;
+  color: #e6edf3; font-size: 1.05rem; padding: .9rem 1.2rem;
+}
+.search-input::placeholder { color: #484f58; }
+.search-btn {
+  background: linear-gradient(135deg, #1f6feb, #7c3aed);
+  border: none; color: #fff; padding: .9rem 1.6rem;
+  font-weight: 700; font-size: .95rem; cursor: pointer;
+  display: flex; align-items: center; gap: .4rem;
+  transition: opacity .2s;
+}
+.search-btn:hover { opacity: .85; }
+
+/* Trending pills */
+.trending-pills {
+  display: flex; flex-wrap: wrap; justify-content: center;
+  gap: .5rem; margin-top: 1.2rem;
+}
+.trend-pill {
+  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 50px; padding: .3rem .85rem; font-size: .8rem;
+  color: #8b949e; cursor: pointer; text-decoration: none;
+  transition: all .2s;
+}
+.trend-pill:hover { background: rgba(88,166,255,0.1); border-color: #58a6ff; color: #58a6ff; }
+.trend-pill .emo { margin-right: .25rem; }
+
+/* ── Report sections ─────────────────────────────────────── */
+.report-wrap { max-width: 1200px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+/* Topic header bar */
+.topic-header {
+  display: flex; align-items: center; gap: 1rem;
+  background: linear-gradient(135deg, rgba(31,111,235,.12), rgba(124,58,237,.08));
+  border: 1px solid rgba(88,166,255,0.2); border-radius: 14px;
+  padding: 1.2rem 1.8rem; margin-bottom: 1.8rem;
+}
+.topic-icon { font-size: 2rem; }
+.topic-name { font-size: 1.6rem; font-weight: 800; color: #e6edf3; }
+.topic-meta { font-size: .82rem; color: #8b949e; margin-top: .2rem; }
+.market-stance-pill {
+  margin-left: auto; background: rgba(88,166,255,0.1);
+  border: 1px solid rgba(88,166,255,0.25); border-radius: 50px;
+  padding: .4rem 1rem; font-size: .82rem; color: #58a6ff; font-weight: 600;
+  white-space: nowrap;
+}
+.market-stance-pill.positive { background: rgba(46,160,67,.1); border-color: rgba(46,160,67,.25); color: #2ea043; }
+.market-stance-pill.negative { background: rgba(248,81,73,.1); border-color: rgba(248,81,73,.25); color: #f85149; }
+
+/* KPI ribbon */
+.kpi-ribbon {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem; margin-bottom: 1.8rem;
+}
+.kpi-card {
+  background: #161b22; border: 1px solid #30363d; border-radius: 12px;
+  padding: 1.2rem 1.4rem; position: relative; overflow: hidden;
+  transition: border-color .2s;
+}
+.kpi-card:hover { border-color: #58a6ff; }
+.kpi-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: linear-gradient(90deg, #1f6feb, #7c3aed);
+}
+.kpi-label { font-size: .73rem; color: #8b949e; text-transform: uppercase; letter-spacing: .8px; margin-bottom: .4rem; }
+.kpi-value { font-size: 1.9rem; font-weight: 800; color: #e6edf3; line-height: 1; }
+.kpi-sub { font-size: .78rem; color: #8b949e; margin-top: .3rem; }
+.kpi-card.positive .kpi-value { color: #2ea043; }
+.kpi-card.negative .kpi-value { color: #f85149; }
+.kpi-card.accent  .kpi-value { color: #58a6ff; }
+
+/* Section heading */
+.section-hd {
+  display: flex; align-items: center; gap: .6rem;
+  font-size: 1.05rem; font-weight: 700; color: #e6edf3;
+  margin-bottom: 1rem; padding-bottom: .6rem;
+  border-bottom: 1px solid #21262d;
+}
+.section-hd .dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: linear-gradient(135deg, #58a6ff, #7c3aed);
+}
+
+/* AI Synthesis card */
+.synthesis-card {
+  background: linear-gradient(135deg, rgba(31,111,235,.06), rgba(124,58,237,.04));
+  border: 1px solid rgba(88,166,255,.18); border-radius: 14px;
+  padding: 1.4rem 1.8rem; margin-bottom: 1.8rem;
+}
+.synthesis-text {
+  color: #c9d1d9; line-height: 1.75; font-size: .97rem;
+}
+.synthesis-text strong { color: #58a6ff; }
+
+/* Insights list */
+.insights-list { list-style: none; padding: 0; margin: 0; }
+.insights-list li {
+  display: flex; align-items: flex-start; gap: .7rem;
+  padding: .6rem 0; border-bottom: 1px solid #21262d;
+  color: #c9d1d9; font-size: .92rem; line-height: 1.55;
+}
+.insights-list li:last-child { border-bottom: none; }
+.insights-list li::before {
+  content: '▸'; color: #58a6ff; font-size: .85rem; margin-top: .1rem; flex-shrink: 0;
+}
+
+/* Sentiment gauge row */
+.sentiment-row {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 1.4rem;
+  margin-bottom: 1.8rem;
+}
+@media (max-width: 700px) { .sentiment-row { grid-template-columns: 1fr; } }
+.chart-card {
+  background: #161b22; border: 1px solid #30363d; border-radius: 14px;
+  padding: 1.4rem; position: relative;
+}
+
+/* Sentiment bars */
+.sent-bar-wrap { display: flex; flex-direction: column; gap: .75rem; margin-top: .8rem; }
+.sent-bar-item { display: flex; flex-direction: column; gap: .3rem; }
+.sent-bar-label { display: flex; justify-content: space-between; font-size: .82rem; color: #8b949e; }
+.sent-bar-track { height: 10px; border-radius: 6px; background: #21262d; overflow: hidden; }
+.sent-bar-fill { height: 100%; border-radius: 6px; transition: width 1s ease; }
+.fill-pos { background: linear-gradient(90deg, #2ea043, #56d364); }
+.fill-neu { background: linear-gradient(90deg, #8b949e, #b0bec5); }
+.fill-neg { background: linear-gradient(90deg, #da3633, #f85149); }
+
+/* Emotion spectrum */
+.emotion-grid { display: flex; flex-direction: column; gap: .6rem; margin-top: .8rem; }
+.emo-item { display: flex; align-items: center; gap: .6rem; }
+.emo-label { font-size: .82rem; color: #8b949e; width: 130px; flex-shrink: 0; }
+.emo-track { flex: 1; height: 8px; border-radius: 4px; background: #21262d; overflow: hidden; }
+.emo-fill { height: 100%; border-radius: 4px; }
+.emo-count { font-size: .8rem; color: #8b949e; width: 36px; text-align: right; }
+
+/* Platform section */
+.platforms-wrap { display: flex; flex-direction: column; gap: .6rem; margin-top: .8rem; }
+.platform-row { display: flex; align-items: center; gap: .8rem; }
+.platform-name { font-size: .85rem; color: #c9d1d9; width: 100px; flex-shrink: 0; }
+.platform-bar-track { flex: 1; height: 10px; border-radius: 5px; background: #21262d; overflow: hidden; }
+.platform-bar-fill { height: 100%; border-radius: 5px; background: linear-gradient(90deg, #1f6feb, #58a6ff); }
+.platform-pct { font-size: .8rem; color: #8b949e; width: 40px; text-align: right; }
+
+/* Influencer Leaderboard */
+.leaderboard-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1rem; margin-top: .8rem;
+}
+.leader-card {
+  background: #161b22; border: 1px solid #30363d; border-radius: 12px;
+  padding: 1rem 1.2rem; display: flex; align-items: flex-start; gap: .9rem;
+  transition: border-color .2s; text-decoration: none;
+}
+.leader-card:hover { border-color: #58a6ff; }
+.leader-avatar {
+  width: 44px; height: 44px; border-radius: 50%;
+  background: linear-gradient(135deg, #1f6feb, #7c3aed);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.1rem; font-weight: 700; color: #fff; flex-shrink: 0;
+}
+.leader-info { flex: 1; min-width: 0; }
+.leader-name { font-size: .88rem; font-weight: 700; color: #e6edf3; }
+.leader-title { font-size: .78rem; color: #8b949e; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: .15rem; }
+.leader-stats { display: flex; gap: .5rem; margin-top: .4rem; flex-wrap: wrap; }
+.leader-stat { font-size: .73rem; color: #8b949e; background: #21262d; border-radius: 4px; padding: .1rem .4rem; }
+.leader-sent { margin-left: auto; font-size: .72rem; padding: .2rem .5rem; border-radius: 4px; font-weight: 600; }
+.sent-pos { background: rgba(46,160,67,.15); color: #2ea043; }
+.sent-neu { background: rgba(139,148,158,.12); color: #8b949e; }
+.sent-neg { background: rgba(248,81,73,.15); color: #f85149; }
+
+/* Quotes sections */
+.quotes-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1rem; margin-top: .8rem;
+}
+.quote-card {
+  background: #161b22; border: 1px solid #30363d; border-radius: 12px;
+  padding: 1.1rem 1.3rem; position: relative;
+}
+.quote-card.praise { border-left: 3px solid #2ea043; }
+.quote-card.critique { border-left: 3px solid #f85149; }
+.quote-icon {
+  font-size: 1.5rem; color: #2ea043; margin-bottom: .5rem; display: block;
+}
+.quote-card.critique .quote-icon { color: #f85149; }
+.quote-text { font-size: .88rem; color: #c9d1d9; line-height: 1.6; font-style: italic; margin-bottom: .7rem; }
+.quote-author { font-size: .78rem; color: #8b949e; }
+.quote-author strong { color: #58a6ff; }
+.quote-likes { font-size: .75rem; color: #8b949e; margin-top: .4rem; }
+
+/* Keyword cloud */
+.kw-cloud { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .8rem; }
+.kw-tag {
+  padding: .3rem .7rem; border-radius: 6px; font-size: .8rem; font-weight: 600;
+  cursor: default; border: 1px solid transparent;
+}
+.kw-pos { background: rgba(46,160,67,.12); border-color: rgba(46,160,67,.25); color: #56d364; }
+.kw-neu { background: rgba(139,148,158,.1); border-color: rgba(139,148,158,.2); color: #8b949e; }
+.kw-neg { background: rgba(248,81,73,.1); border-color: rgba(248,81,73,.2); color: #f85149; }
+
+/* Posts feed */
+.posts-feed { display: flex; flex-direction: column; gap: .8rem; margin-top: .8rem; }
+.post-card {
+  background: #161b22; border: 1px solid #30363d; border-radius: 12px;
+  padding: 1rem 1.3rem; display: flex; flex-direction: column; gap: .5rem;
+  transition: border-color .2s;
+}
+.post-card:hover { border-color: #30363d88; }
+.post-top { display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; }
+.post-platform-badge {
+  padding: .2rem .55rem; border-radius: 4px; font-size: .73rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .5px;
+}
+.badge-twitter  { background: rgba(29,155,240,.12); color: #1d9bf0; }
+.badge-youtube  { background: rgba(255,0,0,.12); color: #ff4444; }
+.badge-reddit   { background: rgba(255,69,0,.12); color: #ff4500; }
+.badge-telegram { background: rgba(0,136,204,.12); color: #0088cc; }
+.badge-newsapi  { background: rgba(88,166,255,.12); color: #58a6ff; }
+.post-author { font-size: .82rem; font-weight: 700; color: #e6edf3; }
+.post-time { font-size: .75rem; color: #484f58; margin-left: auto; }
+.post-content { font-size: .88rem; color: #c9d1d9; line-height: 1.6; }
+.post-footer { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+.post-metric { font-size: .78rem; color: #8b949e; display: flex; align-items: center; gap: .3rem; }
+.post-link { font-size: .78rem; color: #58a6ff; text-decoration: none; margin-left: auto; }
+.post-link:hover { text-decoration: underline; }
+.post-sent-badge {
+  font-size: .72rem; padding: .15rem .45rem; border-radius: 4px; font-weight: 600;
+}
+
+/* Risk banner */
+.risk-banner {
+  display: flex; align-items: center; gap: 1rem;
+  background: #161b22; border: 1px solid #30363d; border-radius: 12px;
+  padding: 1rem 1.4rem; margin-bottom: 1.8rem;
+}
+.risk-icon { font-size: 1.5rem; }
+.risk-label { font-size: .72rem; text-transform: uppercase; color: #8b949e; letter-spacing: .8px; }
+.risk-text { font-size: .95rem; font-weight: 700; color: #e6edf3; }
+
+/* 2-column grid */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1.4rem; margin-bottom: 1.8rem; }
+@media (max-width: 800px) { .two-col { grid-template-columns: 1fr; } }
+
+/* Full width section wrapper */
+.full-section { margin-bottom: 1.8rem; }
+
+/* Landing CTA */
+.landing-hero { text-align: center; padding: 4rem 1rem; }
+.landing-hero h2 { font-size: 2rem; font-weight: 800; color: #e6edf3; margin-bottom: .8rem; }
+.landing-hero p  { color: #8b949e; font-size: 1.05rem; max-width: 520px; margin: 0 auto 2rem; }
+.feature-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem; max-width: 900px; margin: 2rem auto 0;
+}
+.feature-card {
+  background: #161b22; border: 1px solid #30363d; border-radius: 12px;
+  padding: 1.4rem; text-align: left;
+}
+.feature-card .fi { font-size: 1.6rem; margin-bottom: .7rem; }
+.feature-card h4 { font-size: .9rem; font-weight: 700; color: #e6edf3; margin-bottom: .3rem; }
+.feature-card p  { font-size: .8rem; color: #8b949e; line-height: 1.55; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- ═══ HERO SEARCH BAR ═══════════════════════════════════════════ -->
+<div class="hero-wrap">
+  <div class="brand-badge">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    Social Media Intelligence
+  </div>
+  <h1 class="hero-title">What are people saying about…</h1>
+  <p class="hero-sub">Enter any brand, topic, company, or person to generate a real-time analytics report</p>
+
+  <form class="search-form-wrap" method="GET" action="/">
+    <div class="search-bar">
+      <input class="search-input" type="text" name="q"
+             placeholder="e.g. AI Agents, Tesla, Climate Change, OpenAI..."
+             value="{{ topic_query }}" autofocus autocomplete="off">
+      <button class="search-btn" type="submit">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        Analyze
+      </button>
+    </div>
+  </form>
+
+  {% if sample_topics %}
+  <div class="trending-pills">
+    <span style="font-size:.78rem;color:#484f58;margin-right:.2rem;">Trending:</span>
+    {% for t in sample_topics %}
+    <a href="/?q={{ t.title|urlencode }}" class="trend-pill">
+      <span class="emo">{% if t.dominant_emotion == 'excitement' %}🔥{% elif t.dominant_emotion == 'support' %}💚{% elif t.dominant_emotion == 'anxiety' %}⚡{% elif t.dominant_emotion == 'curiosity' %}🔭{% else %}📊{% endif %}</span>{{ t.title }}
+    </a>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+
+<!-- ═══ DATABASE INDICATOR ════════════════════════════════════════ -->
+<div style="background:#0d1117;border-bottom:1px solid #21262d;padding:.5rem 1.5rem;display:flex;align-items:center;gap:1rem;font-size:.78rem;color:#484f58;">
+  <span>📦 {{ total_db_posts|default:0 }} posts indexed</span>
+  {% if topic_query %}<span>🔍 Searching: <strong style="color:#58a6ff;">{{ topic_query }}</strong></span>{% endif %}
+  {% if report %}<a href="/?q={{ topic_query|urlencode }}&live=1" style="color:#58a6ff;text-decoration:none;margin-left:auto;">↻ Refresh Live Data</a>{% endif %}
+</div>
+
+<!-- ═══ MAIN CONTENT ══════════════════════════════════════════════ -->
+{% if report %}
+<div class="report-wrap">
+
+  <!-- Topic Header -->
+  <div class="topic-header">
+    <div class="topic-icon">📡</div>
+    <div>
+      <div class="topic-name">{{ report.topic }}</div>
+      <div class="topic-meta">
+        {{ report.total_posts|default:0 }} posts &bull; {{ report.engagement_total|default:0 }} engagements &bull;
+        {{ report.views_total|default:0 }} views &bull; {{ report.platforms|length }} platforms
+      </div>
+    </div>
+    <div class="market-stance-pill {% if report.avg_sentiment > 0.1 %}positive{% elif report.avg_sentiment < -0.1 %}negative{% endif %}">
+      {{ report.market_stance|default:"Analyzing..." }}
+    </div>
+  </div>
+
+  <!-- Risk Banner -->
+  <div class="risk-banner">
+    <span class="risk-icon">{% if 'Favorable' in report.risk_badge or 'Advocacy' in report.risk_badge %}✅{% elif 'Opposition' in report.risk_badge %}🔴{% elif 'Skepticism' in report.risk_badge %}🟡{% else %}🟢{% endif %}</span>
+    <div>
+      <div class="risk-label">Risk & Tone Assessment</div>
+      <div class="risk-text" style="color:{{ report.risk_color }}">{{ report.risk_badge }}</div>
+    </div>
+    <div style="margin-left:auto;text-align:right;">
+      <div class="risk-label">Favorable Ratio</div>
+      <div style="font-size:1.3rem;font-weight:800;color:#56d364;">{{ report.favorable_ratio|default:0|floatformat:1 }}%</div>
+    </div>
+  </div>
+
+  <!-- KPI Ribbon -->
+  <div class="kpi-ribbon">
+    <div class="kpi-card {% if report.avg_sentiment > 0.1 %}positive{% elif report.avg_sentiment < -0.1 %}negative{% endif %}">
+      <div class="kpi-label">Net Sentiment</div>
+      <div class="kpi-value">{{ report.avg_sentiment|floatformat:2 }}</div>
+      <div class="kpi-sub">{{ report.sentiment_label|capfirst }} overall</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Total Posts</div>
+      <div class="kpi-value accent" style="color:#58a6ff;">{{ report.total_posts|default:0 }}</div>
+      <div class="kpi-sub">Across {{ report.platforms|length }} platforms</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Engagements</div>
+      <div class="kpi-value" style="color:#d2a8ff;">{{ report.engagement_total|default:0 }}</div>
+      <div class="kpi-sub">Likes + reposts + comments</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Total Views</div>
+      <div class="kpi-value" style="color:#ffa657;">{{ report.views_total|default:0 }}</div>
+      <div class="kpi-sub">Combined reach</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Dominant Emotion</div>
+      <div class="kpi-value" style="color:#79c0ff;font-size:1.3rem;">{{ report.dominant_emotion|capfirst }}</div>
+      <div class="kpi-sub">{{ report.dominant_emotion_pct }}% share</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Top Platform</div>
+      <div class="kpi-value" style="color:#e6edf3;font-size:1.2rem;">{{ report.top_platform }}</div>
+      <div class="kpi-sub">Highest volume</div>
+    </div>
+  </div>
+
+  <!-- AI Synthesis -->
+  <div class="synthesis-card">
+    <div class="section-hd"><div class="dot"></div>AI Executive Synthesis</div>
+    <div class="synthesis-text">{{ report.ai_synthesis|default:"No synthesis available." }}</div>
+    {% if report.editorial_consensus %}
+    <div style="margin-top:.8rem;font-size:.84rem;color:#8b949e;border-top:1px solid #21262d;padding-top:.7rem;">
+      <strong style="color:#8b949e;">Editorial Consensus:</strong> {{ report.editorial_consensus }}
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Insights -->
+  {% if report.insights %}
+  <div class="full-section">
+    <div class="section-hd"><div class="dot"></div>Key Insights</div>
+    <ul class="insights-list">
+      {% for insight in report.insights %}
+      <li>{{ insight }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  <!-- Sentiment + Emotion -->
+  <div class="sentiment-row">
+    <!-- Sentiment Breakdown -->
+    <div class="chart-card">
+      <div class="section-hd"><div class="dot"></div>Sentiment Breakdown</div>
+      <div class="sent-bar-wrap">
+        <div class="sent-bar-item">
+          <div class="sent-bar-label">
+            <span>✅ Positive</span>
+            <span>{{ report.pos_count }} ({{ report.pos_pct }}%)</span>
+          </div>
+          <div class="sent-bar-track">
+            <div class="sent-bar-fill fill-pos" style="width:{{ report.pos_pct|default:0 }}%"></div>
+          </div>
+        </div>
+        <div class="sent-bar-item">
+          <div class="sent-bar-label">
+            <span>⚪ Neutral</span>
+            <span>{{ report.neu_count }} ({{ report.neu_pct }}%)</span>
+          </div>
+          <div class="sent-bar-track">
+            <div class="sent-bar-fill fill-neu" style="width:{{ report.neu_pct|default:0 }}%"></div>
+          </div>
+        </div>
+        <div class="sent-bar-item">
+          <div class="sent-bar-label">
+            <span>❌ Negative</span>
+            <span>{{ report.neg_count }} ({{ report.neg_pct }}%)</span>
+          </div>
+          <div class="sent-bar-track">
+            <div class="sent-bar-fill fill-neg" style="width:{{ report.neg_pct|default:0 }}%"></div>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:1.5rem;">
+        <canvas id="sentPieChart" height="170"></canvas>
+      </div>
+    </div>
+
+    <!-- Emotion Spectrum -->
+    <div class="chart-card">
+      <div class="section-hd"><div class="dot"></div>Emotion Spectrum</div>
+      <div class="emotion-grid">
+        {% with es=report.emotion_spectrum %}
+        <div class="emo-item">
+          <span class="emo-label">🔥 Enthusiasm</span>
+          <div class="emo-track">
+            <div class="emo-fill" style="width:{% widthratio es.enthusiasm report.total_posts 100 %}%;background:linear-gradient(90deg,#f97316,#fb923c)"></div>
+          </div>
+          <span class="emo-count">{{ es.enthusiasm }}</span>
+        </div>
+        <div class="emo-item">
+          <span class="emo-label">😊 Satisfaction</span>
+          <div class="emo-track">
+            <div class="emo-fill" style="width:{% widthratio es.satisfaction report.total_posts 100 %}%;background:linear-gradient(90deg,#2ea043,#56d364)"></div>
+          </div>
+          <span class="emo-count">{{ es.satisfaction }}</span>
+        </div>
+        <div class="emo-item">
+          <span class="emo-label">📰 Neutral Reporting</span>
+          <div class="emo-track">
+            <div class="emo-fill" style="width:{% widthratio es.neutral_reporting report.total_posts 100 %}%;background:linear-gradient(90deg,#8b949e,#b0bec5)"></div>
+          </div>
+          <span class="emo-count">{{ es.neutral_reporting }}</span>
+        </div>
+        <div class="emo-item">
+          <span class="emo-label">🤨 Skepticism</span>
+          <div class="emo-track">
+            <div class="emo-fill" style="width:{% widthratio es.skepticism_cost report.total_posts 100 %}%;background:linear-gradient(90deg,#f59e0b,#fbbf24)"></div>
+          </div>
+          <span class="emo-count">{{ es.skepticism_cost }}</span>
+        </div>
+        <div class="emo-item">
+          <span class="emo-label">⚡ Friction / Issues</span>
+          <div class="emo-track">
+            <div class="emo-fill" style="width:{% widthratio es.friction_issues report.total_posts 100 %}%;background:linear-gradient(90deg,#da3633,#f85149)"></div>
+          </div>
+          <span class="emo-count">{{ es.friction_issues }}</span>
+        </div>
+        {% endwith %}
+      </div>
+
+      <div style="margin-top:1.5rem;">
+        <canvas id="emoBarChart" height="170"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Platform + Chart -->
+  <div class="two-col">
+    <!-- Platform Breakdown -->
+    <div class="chart-card">
+      <div class="section-hd"><div class="dot"></div>Platform Distribution</div>
+      <div class="platforms-wrap">
+        {% for p in report.platforms %}
+        <div class="platform-row">
+          <span class="platform-name">{{ p.name }}</span>
+          <div class="platform-bar-track">
+            <div class="platform-bar-fill"
+                 style="width:{% with pct=p.count|default:1 %}{% widthratio pct report.total_posts 100 %}{% endwith %}%">
+            </div>
+          </div>
+          <span class="platform-pct">{{ p.count }}</span>
+        </div>
+        {% empty %}
+        <div style="color:#484f58;font-size:.85rem;">No platform data.</div>
+        {% endfor %}
+      </div>
+      <div style="margin-top:1.2rem;">
+        <canvas id="platformChart" height="160"></canvas>
+      </div>
+    </div>
+
+    <!-- Topics discussed -->
+    <div class="chart-card">
+      <div class="section-hd"><div class="dot"></div>Related Topics Discussed</div>
+      {% if report.topics %}
+      <div style="display:flex;flex-direction:column;gap:.6rem;margin-top:.5rem;">
+        {% for t in report.topics %}
+        <div style="display:flex;align-items:center;gap:.8rem;">
+          <span style="font-size:.82rem;color:#c9d1d9;flex:1;">{{ t.name }}</span>
+          <div style="width:100px;height:8px;border-radius:4px;background:#21262d;overflow:hidden;">
+            <div style="height:100%;background:linear-gradient(90deg,#1f6feb,#7c3aed);width:{% widthratio t.count report.total_posts 100 %}%;border-radius:4px;"></div>
+          </div>
+          <span style="font-size:.78rem;color:#8b949e;width:32px;text-align:right;">{{ t.count }}</span>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div style="color:#484f58;font-size:.85rem;margin-top:.5rem;">No sub-topics detected.</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Influencer Leaderboard -->
+  {% if report.influencer_leaderboard %}
+  <div class="full-section">
+    <div class="section-hd"><div class="dot"></div>YouTube Influencer Leaderboard</div>
+    <div class="leaderboard-grid">
+      {% for inf in report.influencer_leaderboard %}
+      <a href="{{ inf.url }}" target="_blank" rel="noopener" class="leader-card">
+        <div class="leader-avatar">{{ inf.channel|first|upper }}</div>
+        <div class="leader-info">
+          <div class="leader-name">{{ inf.channel }}</div>
+          <div class="leader-title">{{ inf.video_title }}</div>
+          <div class="leader-stats">
+            <span class="leader-stat">👁 {{ inf.views }}</span>
+            <span class="leader-stat">👍 {{ inf.likes }}</span>
+            <span class="leader-sent sent-{% if inf.sentiment == 'positive' %}pos{% elif inf.sentiment == 'negative' %}neg{% else %}neu{% endif %}">
+              {{ inf.sentiment|capfirst }}
+            </span>
+          </div>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Praised Quotes -->
+  {% if report.praised_quotes %}
+  <div class="full-section">
+    <div class="section-hd"><div class="dot"></div>🌟 Top Praised Quotes</div>
+    <div class="quotes-grid">
+      {% for q in report.praised_quotes %}
+      <div class="quote-card praise">
+        <span class="quote-icon">"</span>
+        <div class="quote-text">{{ q.quote }}</div>
+        <div class="quote-author">— <strong>{{ q.author }}</strong> on {{ q.platform }}</div>
+        {% if q.likes > 0 %}<div class="quote-likes">👍 {{ q.likes }} likes</div>{% endif %}
+        {% if q.url and q.url != '#' %}<a href="{{ q.url }}" target="_blank" rel="noopener" style="font-size:.76rem;color:#58a6ff;text-decoration:none;margin-top:.3rem;display:inline-block;">View original ↗</a>{% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Critical Quotes -->
+  {% if report.critical_quotes %}
+  <div class="full-section">
+    <div class="section-hd"><div class="dot"></div>⚠️ Critical Voices</div>
+    <div class="quotes-grid">
+      {% for q in report.critical_quotes %}
+      <div class="quote-card critique">
+        <span class="quote-icon">"</span>
+        <div class="quote-text">{{ q.quote }}</div>
+        <div class="quote-author">— <strong>{{ q.author }}</strong> on {{ q.platform }}</div>
+        {% if q.likes > 0 %}<div class="quote-likes">👍 {{ q.likes }} likes</div>{% endif %}
+        {% if q.url and q.url != '#' %}<a href="{{ q.url }}" target="_blank" rel="noopener" style="font-size:.76rem;color:#58a6ff;text-decoration:none;margin-top:.3rem;display:inline-block;">View original ↗</a>{% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Semantic Keywords Cloud -->
+  {% if report.semantic_keywords %}
+  <div class="full-section">
+    <div class="section-hd"><div class="dot"></div>Semantic Keywords</div>
+    <div class="kw-cloud">
+      {% for kw in report.semantic_keywords %}
+      <span class="kw-tag kw-{{ kw.sentiment }}" title="{{ kw.count }} occurrences">
+        {{ kw.keyword }} <span style="opacity:.6;font-size:.7rem;">×{{ kw.count }}</span>
+      </span>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Live Posts Feed -->
+  {% if report.recent_posts %}
+  <div class="full-section">
+    <div class="section-hd"><div class="dot"></div>Live Posts Feed</div>
+    <div class="posts-feed">
+      {% for post in report.recent_posts %}
+      <div class="post-card">
+        <div class="post-top">
+          <span class="post-platform-badge badge-{{ post.platform }}">{{ post.get_platform_display }}</span>
+          <span class="post-author">{{ post.author.display_name|default:post.author.username|default:"Unknown" }}</span>
+          <span class="post-sent-badge sent-{% if post.sentiment_label == 'positive' %}pos{% elif post.sentiment_label == 'negative' %}neg{% else %}neu{% endif %}">
+            {{ post.sentiment_label|capfirst }}
+          </span>
+          <span class="post-time">{{ post.created_at|timesince }} ago</span>
+        </div>
+        <div class="post-content">{{ post.content|truncatechars:280 }}</div>
+        <div class="post-footer">
+          <span class="post-metric">👍 {{ post.likes_count }}</span>
+          <span class="post-metric">🔁 {{ post.reposts_count }}</span>
+          <span class="post-metric">💬 {{ post.comments_count }}</span>
+          {% if post.views_count > 0 %}<span class="post-metric">👁 {{ post.views_count }}</span>{% endif %}
+          {% if post.raw_metadata.url %}
+          <a href="{{ post.raw_metadata.url }}" target="_blank" rel="noopener" class="post-link">View original ↗</a>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+</div><!-- /report-wrap -->
+
+<!-- Charts JS -->
+<script>
+(function(){
+  const dark = '#161b22', grid = '#21262d', text = '#8b949e';
+
+  // Sentiment Pie
+  const sp = document.getElementById('sentPieChart');
+  if(sp){
+    new Chart(sp.getContext('2d'), {
+      type: 'doughnut',
+      data: {
+        labels: ['Positive','Neutral','Negative'],
+        datasets:[{
+          data: [{{ report.pos_count }}, {{ report.neu_count }}, {{ report.neg_count }}],
+          backgroundColor: ['#2ea043','#8b949e','#da3633'],
+          borderWidth: 0, hoverOffset: 6
+        }]
+      },
+      options:{
+        responsive:true, cutout:'65%',
+        plugins:{
+          legend:{ position:'bottom', labels:{ color:text, boxWidth:12, padding:14 } },
+          tooltip:{ backgroundColor:'#1c2128', titleColor:'#e6edf3', bodyColor:text }
+        }
+      }
+    });
+  }
+
+  // Emotion Bar
+  const eb = document.getElementById('emoBarChart');
+  if(eb){
+    const es = {{ report.emotion_spectrum|default:'{}' | safe }};
+    new Chart(eb.getContext('2d'), {
+      type: 'bar',
+      data:{
+        labels: Object.keys(es).map(k=>k.replace('_',' ')),
+        datasets:[{
+          label:'Volume',
+          data: Object.values(es),
+          backgroundColor:['#f97316','#2ea043','#8b949e','#f59e0b','#da3633'],
+          borderRadius: 6, borderWidth: 0
+        }]
+      },
+      options:{
+        responsive:true, indexAxis:'y',
+        plugins:{ legend:{display:false}, tooltip:{ backgroundColor:'#1c2128', titleColor:'#e6edf3', bodyColor:text } },
+        scales:{
+          x:{ grid:{color:grid}, ticks:{color:text} },
+          y:{ grid:{display:false}, ticks:{color:text} }
+        }
+      }
+    });
+  }
+
+  // Platform Chart
+  const pc = document.getElementById('platformChart');
+  if(pc){
+    const ps = {{ report.platforms|default:'[]'|safe }};
+    new Chart(pc.getContext('2d'), {
+      type: 'bar',
+      data:{
+        labels: ps.map(p=>p.name),
+        datasets:[{
+          label:'Posts',
+          data: ps.map(p=>p.count),
+          backgroundColor:'rgba(31,111,235,0.7)', borderRadius:6, borderWidth:0
+        }]
+      },
+      options:{
+        responsive:true,
+        plugins:{ legend:{display:false}, tooltip:{ backgroundColor:'#1c2128', titleColor:'#e6edf3', bodyColor:text } },
+        scales:{
+          x:{ grid:{display:false}, ticks:{color:text} },
+          y:{ grid:{color:grid}, ticks:{color:text} }
+        }
+      }
+    });
+  }
+})();
+</script>
+
+{% else %}
+<!-- ═══ LANDING PAGE (no query yet) ══════════════════════════════ -->
+<div class="report-wrap">
+  <div class="landing-hero">
+    <h2>Real-Time Social Media Intelligence</h2>
+    <p>Search any topic above to get a comprehensive analytics report with sentiment analysis, influencer data, and platform distribution.</p>
+
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="fi">🎯</div>
+        <h4>Sentiment Analysis</h4>
+        <p>Positive/neutral/negative breakdown with net sentiment score and favorable ratio.</p>
+      </div>
+      <div class="feature-card">
+        <div class="fi">📊</div>
+        <h4>Dossier Report</h4>
+        <p>Market stance, praised quotes, critical voices, semantic keywords and emotion spectrum.</p>
+      </div>
+      <div class="feature-card">
+        <div class="fi">🏆</div>
+        <h4>Influencer Leaderboard</h4>
+        <p>Top YouTube creators, views, likes, and sentiment for each channel discussing your topic.</p>
+      </div>
+      <div class="feature-card">
+        <div class="fi">🌐</div>
+        <h4>Multi-Platform</h4>
+        <p>YouTube, NewsAPI, Reddit, HackerNews, Twitter/Mastodon, and Telegram — all in one report.</p>
+      </div>
+      <div class="feature-card">
+        <div class="fi">💬</div>
+        <h4>Praised & Critical Quotes</h4>
+        <p>Real quotes from positive and critical voices — with author attribution and platform links.</p>
+      </div>
+      <div class="feature-card">
+        <div class="fi">🔑</div>
+        <h4>Semantic Keywords</h4>
+        <p>Top keywords extracted from discussions with sentiment tagging and frequency counts.</p>
+      </div>
+    </div>
+
+    {% if sample_topics %}
+    <div style="margin-top:2rem;">
+      <div style="font-size:.85rem;color:#8b949e;margin-bottom:.8rem;">Try a trending topic:</div>
+      <div class="trending-pills" style="justify-content:center;">
+        {% for t in sample_topics %}
+        <a href="/?q={{ t.title|urlencode }}" class="trend-pill" style="font-size:.88rem;padding:.4rem 1rem;">
+          {% if t.dominant_emotion == 'excitement' %}🔥{% elif t.dominant_emotion == 'support' %}💚{% elif t.dominant_emotion == 'anxiety' %}⚡{% elif t.dominant_emotion == 'curiosity' %}🔭{% else %}📊{% endif %}
+          {{ t.title }}
+        </a>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}

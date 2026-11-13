@@ -1,0 +1,556 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Social Media API Connector Status Strip -->
+<section class="glass-card" style="margin-bottom: 20px; padding: 18px 22px;">
+    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px; margin-bottom: 14px;">
+        <div class="card-title-group">
+            <div style="width: 38px; height: 38px; border-radius: var(--radius-sm); background: rgba(56, 189, 248, 0.15); color: var(--cyan); display: flex; align-items: center; justify-content: center;">
+                <i data-lucide="radio"></i>
+            </div>
+            <div>
+                <h2 class="card-title" style="font-size: 16.5px;">Live Social Media API Connectors</h2>
+                <div class="card-subtitle">Real-time multi-platform integration across REST v2, Public Feeds, and Federated Protocols</div>
+            </div>
+        </div>
+        <div style="display: flex; gap: 10px; align-items: center;">
+            <button class="btn btn-secondary" onclick="openApiConfigModal()" style="font-size: 12.5px; border-color: rgba(56, 189, 248, 0.3); color: var(--cyan);">
+                <i data-lucide="key"></i> Configure API Credentials
+            </button>
+            <button class="btn btn-secondary" onclick="clearMockData()" id="btn-clear-mock" style="font-size: 12.5px; color: var(--rose); border-color: rgba(244, 63, 94, 0.3);">
+                <i data-lucide="trash-2"></i> Clear Mock Data
+            </button>
+        </div>
+    </div>
+
+    <!-- Connector Health Matrix Grid -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px;" id="connector-matrix">
+        {% for key, info in connectors.items %}
+        <div style="background: rgba(11, 17, 32, 0.7); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 12px 14px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+                <span style="font-size: 13px; font-weight: 600; color: #f1f5f9;">{{ info.name }}</span>
+                <span style="display: inline-flex; align-items: center; gap: 4px; font-size: 10.5px; padding: 2px 8px; border-radius: 12px; {% if info.configured %}background: rgba(16, 185, 129, 0.15); color: var(--emerald); border: 1px solid rgba(16, 185, 129, 0.3);{% else %}background: rgba(56, 189, 248, 0.12); color: var(--cyan); border: 1px solid rgba(56, 189, 248, 0.25);{% endif %}">
+                    <span style="width: 6px; height: 6px; border-radius: 50%; background: {% if info.configured %}var(--emerald){% else %}var(--cyan){% endif %};"></span>
+                    {{ info.status }}
+                </span>
+            </div>
+            <div style="font-size: 11px; color: var(--text-dim); line-height: 1.4;">{{ info.description }}</div>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+
+<!-- Live Real-World Data Crawler & Control Console -->
+<section class="glass-card" style="border: 1px solid var(--cyan); background: linear-gradient(135deg, rgba(6, 182, 212, 0.07) 0%, rgba(15, 23, 42, 0.85) 100%); margin-bottom: 24px;">
+    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px; margin-bottom: 16px;">
+        <div class="card-title-group">
+            <div style="width: 36px; height: 36px; border-radius: var(--radius-sm); background: rgba(6, 182, 212, 0.2); color: var(--cyan); display: flex; align-items: center; justify-content: center;">
+                <i data-lucide="download-cloud"></i>
+            </div>
+            <div>
+                <h3 class="card-title" style="font-size: 16px;">Fetch Real-Time Social Media Data</h3>
+                <div class="card-subtitle">Executes live network queries, parses posts, runs NLP Sentiment & Emotion models, and computes graph centrality</div>
+            </div>
+        </div>
+        <div style="display: flex; gap: 10px; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 8px; background: rgba(11, 17, 32, 0.8); padding: 6px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle); font-size: 12px;">
+                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; color: var(--text-muted); margin: 0;">
+                    <input type="checkbox" id="chk-auto-sync" onchange="toggleAutoSync(this.checked)">
+                    <span>Auto-Sync (30s)</span>
+                </label>
+                <span id="auto-sync-countdown" style="display: none; font-size: 11px; font-weight: 600; color: var(--cyan);"></span>
+            </div>
+            <button class="btn btn-primary" onclick="fetchRealSocialData()" id="btn-fetch-real" style="padding: 8px 18px;">
+                <i data-lucide="play"></i> Fetch Live Feeds Now
+            </button>
+        </div>
+    </div>
+
+    <!-- Parameter Controls -->
+    <div style="display: grid; grid-template-columns: 2.2fr 1.8fr auto auto; gap: 14px; align-items: end; background: rgba(11, 17, 32, 0.65); padding: 16px; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);">
+        <div class="form-group" style="margin: 0;">
+            <label class="form-label" style="display: flex; justify-content: space-between;">
+                <span>Search Keyword / Topic / Hashtag</span>
+                <span style="font-size: 11px; color: var(--text-dim);">Queries live feeds</span>
+            </label>
+            <input type="text" class="form-input" id="real-fetch-keyword" value="AI" placeholder="e.g. AI, Climate, Semiconductors, Autonomous Agents, Crypto">
+            <!-- Quick Topic Pills -->
+            <div style="display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap;">
+                <span class="quick-pill" onclick="setQuickKeyword('AI')">#AI</span>
+                <span class="quick-pill" onclick="setQuickKeyword('Autonomous Agents')">#AutonomousAgents</span>
+                <span class="quick-pill" onclick="setQuickKeyword('Semiconductors')">#Semiconductors</span>
+                <span class="quick-pill" onclick="setQuickKeyword('Climate Tech')">#ClimateTech</span>
+                <span class="quick-pill" onclick="setQuickKeyword('Cybersecurity')">#Cybersecurity</span>
+                <span class="quick-pill" onclick="setQuickKeyword('Crypto')">#Crypto</span>
+            </div>
+        </div>
+
+        <div class="form-group" style="margin: 0;">
+            <label class="form-label">Active Social Media Networks</label>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; font-size: 12px; color: var(--text-muted); padding: 6px 0;">
+                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;"><input type="checkbox" id="src-tw" checked> X (Twitter)</label>
+                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;"><input type="checkbox" id="src-rd" checked> Reddit</label>
+                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;"><input type="checkbox" id="src-yt" checked> YouTube</label>
+                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;"><input type="checkbox" id="src-tg" checked> Telegram</label>
+                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;"><input type="checkbox" id="src-hn" checked> HackerNews</label>
+                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;"><input type="checkbox" id="src-mb" checked> Mastodon</label>
+            </div>
+        </div>
+
+        <div class="form-group" style="margin: 0;">
+            <label class="form-label">Limit / Network</label>
+            <select class="form-input" id="real-fetch-limit" style="height: 38px;">
+                <option value="5">5 posts</option>
+                <option value="10" selected>10 posts</option>
+                <option value="15">15 posts</option>
+                <option value="25">25 posts</option>
+            </select>
+        </div>
+
+        <div style="margin: 0; padding-bottom: 6px;">
+            <label style="font-size: 12px; color: var(--text-dim); display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                <input type="checkbox" id="chk-clear-old"> Replace old
+            </label>
+        </div>
+    </div>
+
+    <!-- Status Banner / Ingestion Telemetry -->
+    <div id="fetch-status-banner" style="display: none; margin-top: 14px; padding: 12px 16px; border-radius: var(--radius-sm); font-size: 12.5px; transition: all 0.3s ease;"></div>
+</section>
+
+<!-- Filter & Search Toolbar -->
+<section style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center; justify-content: space-between; margin-bottom: 18px; background: rgba(15, 23, 42, 0.4); padding: 12px 16px; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);">
+    <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+        <span style="font-size: 12px; color: var(--text-dim); margin-right: 4px;">Platform:</span>
+        <button class="btn btn-secondary platform-filter-btn active" onclick="filterPlatform('all', this)" style="font-size: 12px; padding: 5px 12px;">
+            All ({{ posts|length }})
+        </button>
+        {% for p_code, p_name in platforms %}
+        <button class="btn btn-secondary platform-filter-btn" onclick="filterPlatform('{{ p_code }}', this)" style="font-size: 12px; padding: 5px 12px;">
+            {{ p_name }}
+        </button>
+        {% endfor %}
+    </div>
+
+    <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+        <!-- Sentiment Filter -->
+        <select class="form-input" id="filter-sentiment" onchange="applyFilters()" style="width: 140px; height: 34px; font-size: 12px; padding: 4px 10px;">
+            <option value="all">All Sentiments</option>
+            <option value="positive">Positive</option>
+            <option value="neutral">Neutral</option>
+            <option value="negative">Negative</option>
+        </select>
+
+        <!-- Emotion Filter -->
+        <select class="form-input" id="filter-emotion" onchange="applyFilters()" style="width: 140px; height: 34px; font-size: 12px; padding: 4px 10px;">
+            <option value="all">All Emotions</option>
+            <option value="support">Support</option>
+            <option value="opposition">Opposition</option>
+            <option value="excitement">Excitement</option>
+            <option value="anxiety">Anxiety</option>
+            <option value="sarcasm">Sarcasm</option>
+            <option value="curiosity">Curiosity</option>
+        </select>
+
+        <!-- Search in feed -->
+        <div style="position: relative; width: 220px;">
+            <input type="text" id="stream-search-input" class="form-input" placeholder="Search loaded posts..." oninput="applyFilters()" style="height: 34px; font-size: 12px; padding-left: 28px;">
+            <i data-lucide="search" style="position: absolute; left: 8px; top: 9px; width: 14px; height: 14px; color: var(--text-dim);"></i>
+        </div>
+    </div>
+</section>
+
+<!-- Live Post Feed Container -->
+<section class="post-stream" id="post-feed-container">
+    {% for p in posts %}
+    <div class="post-card post-item" data-platform="{{ p.platform }}" data-sentiment="{{ p.sentiment_label }}" data-emotion="{{ p.emotion_label }}">
+        <div class="post-header">
+            <div class="post-author">
+                <img src="{{ p.author.avatar_url }}" class="post-avatar" alt="" onerror="this.src='https://api.dicebear.com/7.x/identicon/svg?seed={{ p.author.username }}'">
+                <div>
+                    <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                        <span class="post-user">@{{ p.author.username }}</span>
+                        {% if p.author.is_verified %}
+                        <i data-lucide="badge-check" style="width: 14px; height: 14px; color: var(--cyan);"></i>
+                        {% endif %}
+                        <span class="badge badge-{{ p.platform }}">{{ p.get_platform_display }}</span>
+                        {% if p.raw_metadata.source_api %}
+                        <span style="font-size: 10px; color: var(--text-dim); background: rgba(255, 255, 255, 0.05); padding: 1px 6px; border-radius: 4px;">
+                            {{ p.raw_metadata.source_api }}
+                        </span>
+                        {% endif %}
+                    </div>
+                    <div style="font-size: 11px; color: var(--text-dim);">
+                        {{ p.author.primary_interest }} • {{ p.author.estimated_country }}
+                    </div>
+                </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span class="emotion-pill emotion-{{ p.emotion_label }}">{{ p.emotion_label }}</span>
+                <span class="post-time">{{ p.created_at|timesince }} ago</span>
+            </div>
+        </div>
+
+        <div class="post-content" style="line-height: 1.55; font-size: 13.5px; margin: 10px 0;">
+            {{ p.content }}
+        </div>
+
+        <div class="post-footer">
+            <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                {% if p.topic %}
+                <span style="color: var(--cyan); font-weight: 500; font-size: 12px;">
+                    <i data-lucide="bookmark" style="width: 12px; height: 12px; display: inline;"></i> {{ p.topic.title }}
+                </span>
+                {% endif %}
+                <span style="font-size: 11.5px; color: var(--text-dim);">
+                    Sentiment: <strong style="color: {% if p.sentiment_score >= 0.1 %}var(--emerald){% elif p.sentiment_score <= -0.1 %}var(--rose){% else %}var(--text-muted){% endif %};">
+                        {{ p.sentiment_label|capfirst }} ({{ p.sentiment_score }})
+                    </strong>
+                </span>
+                {% if p.raw_metadata.url %}
+                <a href="{{ p.raw_metadata.url }}" target="_blank" rel="noopener noreferrer" style="font-size: 11.5px; color: var(--cyan); text-decoration: none; display: inline-flex; align-items: center; gap: 4px; border: 1px solid rgba(56, 189, 248, 0.2); padding: 2px 8px; border-radius: 4px; background: rgba(56, 189, 248, 0.05);">
+                    <span>Original Post</span>
+                    <i data-lucide="external-link" style="width: 11px; height: 11px;"></i>
+                </a>
+                {% endif %}
+            </div>
+            <div class="post-metrics">
+                <span class="post-metric-item" title="Likes / Upvotes"><i data-lucide="heart" style="width: 13px; height: 13px;"></i> {{ p.likes_count }}</span>
+                <span class="post-metric-item" title="Reposts / Retweets"><i data-lucide="repeat" style="width: 13px; height: 13px;"></i> {{ p.reposts_count }}</span>
+                <span class="post-metric-item" title="Comments / Replies"><i data-lucide="message-circle" style="width: 13px; height: 13px;"></i> {{ p.comments_count }}</span>
+                <span class="post-metric-item" title="Impressions / Views"><i data-lucide="eye" style="width: 13px; height: 13px;"></i> {{ p.views_count }}</span>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div style="text-align: center; color: var(--text-dim); padding: 60px 20px; background: rgba(15, 23, 42, 0.4); border-radius: var(--radius-sm); border: 1px dashed var(--border-subtle);">
+        <i data-lucide="radio" style="width: 42px; height: 42px; margin-bottom: 12px; color: var(--cyan);"></i>
+        <h4 style="color: #f1f5f9; margin-bottom: 6px;">No Social Media Posts Ingested Yet</h4>
+        <p style="font-size: 13px; max-width: 480px; margin: 0 auto 16px;">Click <strong>"Fetch Live Feeds Now"</strong> above to query live feeds across X/Twitter, Reddit, YouTube, Telegram, Hacker News, and Mastodon!</p>
+        <button class="btn btn-primary" onclick="fetchRealSocialData()">
+            <i data-lucide="download-cloud"></i> Fetch First Live Batch
+        </button>
+    </div>
+    {% endfor %}
+</section>
+
+<!-- API Credentials Configuration Modal -->
+<div id="api-config-modal" style="display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(4px); z-index: 1000; align-items: center; justify-content: center; padding: 20px;">
+    <div style="background: #0f172a; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); max-width: 580px; width: 100%; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7); overflow: hidden;">
+        <div style="display: flex; align-items: center; justify-content: space-between; padding: 18px 22px; border-bottom: 1px solid var(--border-subtle); background: rgba(15, 23, 42, 0.95);">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="width: 32px; height: 32px; border-radius: 6px; background: rgba(56, 189, 248, 0.15); color: var(--cyan); display: flex; align-items: center; justify-content: center;">
+                    <i data-lucide="shield-check" style="width: 18px; height: 18px;"></i>
+                </div>
+                <div>
+                    <h3 style="font-size: 15px; font-weight: 600; color: #f8fafc; margin: 0;">Social Media API Credentials</h3>
+                    <div style="font-size: 11.5px; color: var(--text-dim);">Keys are securely stored in local .env configuration</div>
+                </div>
+            </div>
+            <button onclick="closeApiConfigModal()" style="background: none; border: none; color: var(--text-dim); cursor: pointer; padding: 4px;">
+                <i data-lucide="x" style="width: 18px; height: 18px;"></i>
+            </button>
+        </div>
+
+        <div style="padding: 22px; max-height: 70vh; overflow-y: auto; display: flex; flex-direction: column; gap: 16px;">
+            <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: var(--radius-sm); padding: 12px 14px; font-size: 12px; color: #bae6fd;">
+                <strong>Notice:</strong> All connectors have active <em>Zero-Auth fallbacks</em> enabled. Adding official API credentials upgrades data resolution with full impressions, official handles, and expanded search volumes.
+            </div>
+
+            <!-- Twitter / X -->
+            <div class="form-group" style="margin: 0;">
+                <label class="form-label" style="display: flex; justify-content: space-between;">
+                    <span>Twitter / X API v2 Bearer Token</span>
+                    <a href="https://developer.x.com/en/portal/dashboard" target="_blank" style="font-size: 11px; color: var(--cyan); text-decoration: none;">Get Token ↗</a>
+                </label>
+                <input type="password" class="form-input" id="cfg-twitter-token" placeholder="AAAAAAAAAAAAAAAAAAAAA..." autocomplete="off">
+            </div>
+
+            <!-- YouTube Data API v3 -->
+            <div class="form-group" style="margin: 0;">
+                <label class="form-label" style="display: flex; justify-content: space-between;">
+                    <span>YouTube Data API v3 Key</span>
+                    <a href="https://console.cloud.google.com/apis/credentials" target="_blank" style="font-size: 11px; color: var(--cyan); text-decoration: none;">Get Key ↗</a>
+                </label>
+                <input type="password" class="form-input" id="cfg-youtube-key" placeholder="AIzaSy..." autocomplete="off">
+            </div>
+
+            <!-- Reddit Client ID & Secret -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                <div class="form-group" style="margin: 0;">
+                    <label class="form-label" style="display: flex; justify-content: space-between;">
+                        <span>Reddit Client ID</span>
+                        <a href="https://www.reddit.com/prefs/apps" target="_blank" style="font-size: 11px; color: var(--cyan); text-decoration: none;">Apps ↗</a>
+                    </label>
+                    <input type="text" class="form-input" id="cfg-reddit-id" placeholder="Script App ID">
+                </div>
+                <div class="form-group" style="margin: 0;">
+                    <label class="form-label">Reddit Client Secret</label>
+                    <input type="password" class="form-input" id="cfg-reddit-secret" placeholder="App Secret" autocomplete="off">
+                </div>
+            </div>
+
+            <!-- Telegram Bot Token -->
+            <div class="form-group" style="margin: 0;">
+                <label class="form-label">Telegram Bot Token (Optional)</label>
+                <input type="password" class="form-input" id="cfg-telegram-token" placeholder="123456789:ABCdefGHI..." autocomplete="off">
+            </div>
+
+            <div id="modal-save-status" style="display: none; padding: 10px 12px; border-radius: var(--radius-sm); font-size: 12px;"></div>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 10px; padding: 14px 22px; border-top: 1px solid var(--border-subtle); background: rgba(11, 17, 32, 0.95);">
+            <button class="btn btn-secondary" onclick="closeApiConfigModal()" style="font-size: 12.5px;">Cancel</button>
+            <button class="btn btn-primary" onclick="saveApiCredentials()" id="btn-save-keys" style="font-size: 12.5px;">
+                <i data-lucide="check"></i> Save & Activate Keys
+            </button>
+        </div>
+    </div>
+</div>
+
+<style>
+.quick-pill {
+    font-size: 11px;
+    padding: 2px 8px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 12px;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.quick-pill:hover {
+    background: rgba(6, 182, 212, 0.15);
+    border-color: var(--cyan);
+    color: var(--cyan);
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let autoSyncTimer = null;
+    let countdownSec = 30;
+    let countdownInterval = null;
+
+    function setQuickKeyword(kw) {
+        document.getElementById('real-fetch-keyword').value = kw;
+    }
+
+    function filterPlatform(platform, btn) {
+        document.querySelectorAll('.platform-filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        btn.dataset.selectedPlatform = platform;
+        applyFilters();
+    }
+
+    function applyFilters() {
+        const activeBtn = document.querySelector('.platform-filter-btn.active');
+        const selectedPlatform = activeBtn ? (activeBtn.textContent.includes('All') ? 'all' : activeBtn.textContent.trim().toLowerCase()) : 'all';
+        const selectedSentiment = document.getElementById('filter-sentiment').value;
+        const selectedEmotion = document.getElementById('filter-emotion').value;
+        const searchTxt = document.getElementById('stream-search-input').value.toLowerCase().trim();
+
+        const items = document.querySelectorAll('.post-item');
+        items.forEach(item => {
+            const p = item.getAttribute('data-platform');
+            const s = item.getAttribute('data-sentiment');
+            const e = item.getAttribute('data-emotion');
+            const text = item.textContent.toLowerCase();
+
+            let matchPlatform = true;
+            if (activeBtn) {
+                const btnText = activeBtn.textContent;
+                if (!btnText.includes('All')) {
+                    if (btnText.includes('Twitter') && p === 'twitter') matchPlatform = true;
+                    else if (btnText.includes('Reddit') && p === 'reddit') matchPlatform = true;
+                    else if (btnText.includes('YouTube') && p === 'youtube') matchPlatform = true;
+                    else if (btnText.includes('Telegram') && p === 'telegram') matchPlatform = true;
+                    else if (btnText.includes('Instagram') && p === 'instagram') matchPlatform = true;
+                    else if (btnText.includes('Facebook') && p === 'facebook') matchPlatform = true;
+                    else matchPlatform = false;
+                }
+            }
+
+            const matchSentiment = (selectedSentiment === 'all' || s === selectedSentiment);
+            const matchEmotion = (selectedEmotion === 'all' || e === selectedEmotion);
+            const matchSearch = (!searchTxt || text.includes(searchTxt));
+
+            if (matchPlatform && matchSentiment && matchEmotion && matchSearch) {
+                item.style.display = 'block';
+            } else {
+                item.style.display = 'none';
+            }
+        });
+    }
+
+    async function fetchRealSocialData(isSilent = false) {
+        const btn = document.getElementById('btn-fetch-real');
+        const banner = document.getElementById('fetch-status-banner');
+        const keyword = document.getElementById('real-fetch-keyword').value || 'AI';
+        const limit = parseInt(document.getElementById('real-fetch-limit').value || '10');
+        const clearOld = document.getElementById('chk-clear-old').checked;
+
+        const sources = [];
+        if (document.getElementById('src-tw').checked) sources.push('twitter');
+        if (document.getElementById('src-rd').checked) sources.push('reddit');
+        if (document.getElementById('src-yt').checked) sources.push('youtube');
+        if (document.getElementById('src-tg').checked) sources.push('telegram');
+        if (document.getElementById('src-hn').checked) sources.push('hackernews');
+        if (document.getElementById('src-mb').checked) sources.push('mastodon');
+
+        if (sources.length === 0) {
+            alert('Please select at least one social media platform to fetch from.');
+            return;
+        }
+
+        btn.disabled = true;
+        btn.innerHTML = '<i data-lucide="loader"></i> Fetching Live Feeds...';
+        banner.style.display = 'block';
+        banner.style.background = 'rgba(6, 182, 212, 0.12)';
+        banner.style.color = '#38bdf8';
+        banner.style.border = '1px solid rgba(6, 182, 212, 0.3)';
+        banner.innerHTML = `Querying real-time social media networks for <strong>"${keyword}"</strong>... please wait.`;
+        lucide.createIcons();
+
+        try {
+            const res = await fetch('/api/fetch-live-social/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ keyword, sources, limit, clear_old: clearOld })
+            });
+            const data = await res.json();
+            if (data.status === 'success') {
+                const total = data.data.total_real_posts_ingested;
+                const b = data.data.breakdown;
+                const lat = data.data.latencies_ms;
+                
+                banner.style.background = 'rgba(16, 185, 129, 0.15)';
+                banner.style.color = '#34d399';
+                banner.style.border = '1px solid rgba(16, 185, 129, 0.3)';
+                banner.innerHTML = `✅ <strong>${total} Live Posts Successfully Collected & Ingested!</strong><br>` +
+                    `<span style="font-size: 11.5px; opacity: 0.9;">` +
+                    `Breakdown: Twitter: ${b.twitter||0} (${lat.twitter_ms||0}ms) | ` +
+                    `Reddit: ${b.reddit||0} (${lat.reddit_ms||0}ms) | ` +
+                    `YouTube: ${b.youtube||0} (${lat.youtube_ms||0}ms) | ` +
+                    `Telegram: ${b.telegram||0} (${lat.telegram_ms||0}ms) | ` +
+                    `HackerNews: ${b.hackernews||0} (${lat.hackernews_ms||0}ms)` +
+                    `</span>`;
+                setTimeout(() => window.location.reload(), 1400);
+            } else {
+                banner.style.color = '#f87171';
+                banner.style.background = 'rgba(239, 68, 68, 0.15)';
+                banner.style.border = '1px solid rgba(239, 68, 68, 0.3)';
+                banner.innerText = 'Collection error: ' + data.error;
+            }
+        } catch (err) {
+            banner.style.color = '#f87171';
+            banner.style.background = 'rgba(239, 68, 68, 0.15)';
+            banner.style.border = '1px solid rgba(239, 68, 68, 0.3)';
+            banner.innerText = 'Connection failed: ' + err.message;
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i data-lucide="play"></i> Fetch Live Feeds Now';
+            lucide.createIcons();
+        }
+    }
+
+    function toggleAutoSync(enabled) {
+        const badge = document.getElementById('auto-sync-countdown');
+        if (enabled) {
+            badge.style.display = 'inline';
+            countdownSec = 30;
+            badge.innerText = `(${countdownSec}s)`;
+            
+            countdownInterval = setInterval(() => {
+                countdownSec--;
+                if (countdownSec <= 0) {
+                    countdownSec = 30;
+                    fetchRealSocialData(true);
+                }
+                badge.innerText = `(${countdownSec}s)`;
+            }, 1000);
+        } else {
+            badge.style.display = 'none';
+            if (countdownInterval) clearInterval(countdownInterval);
+        }
+    }
+
+    async function clearMockData() {
+        if (!confirm('This will delete all mock/synthetic posts, keeping only real live social media data. Continue?')) {
+            return;
+        }
+        const btn = document.getElementById('btn-clear-mock');
+        btn.disabled = true;
+        try {
+            const res = await fetch('/api/clear-mock-data/', { method: 'POST' });
+            const data = await res.json();
+            alert(`Cleaned up ${data.cleared_count} mock posts. Only real-time data is now active!`);
+            window.location.reload();
+        } catch (err) {
+            alert('Error clearing mock data: ' + err.message);
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    function openApiConfigModal() {
+        document.getElementById('api-config-modal').style.display = 'flex';
+        lucide.createIcons();
+    }
+
+    function closeApiConfigModal() {
+        document.getElementById('api-config-modal').style.display = 'none';
+    }
+
+    async function saveApiCredentials() {
+        const btn = document.getElementById('btn-save-keys');
+        const statusBox = document.getElementById('modal-save-status');
+        btn.disabled = true;
+        btn.innerHTML = 'Saving...';
+
+        const payload = {};
+        const tw = document.getElementById('cfg-twitter-token').value;
+        const yt = document.getElementById('cfg-youtube-key').value;
+        const r_id = document.getElementById('cfg-reddit-id').value;
+        const r_sec = document.getElementById('cfg-reddit-secret').value;
+        const tg = document.getElementById('cfg-telegram-token').value;
+
+        if (tw !== '') payload.twitter_bearer_token = tw;
+        if (yt !== '') payload.youtube_api_key = yt;
+        if (r_id !== '') payload.reddit_client_id = r_id;
+        if (r_sec !== '') payload.reddit_client_secret = r_sec;
+        if (tg !== '') payload.telegram_bot_token = tg;
+
+        try {
+            const res = await fetch('/api/save-api-keys/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            statusBox.style.display = 'block';
+            if (data.status === 'success') {
+                statusBox.style.background = 'rgba(16, 185, 129, 0.15)';
+                statusBox.style.color = '#34d399';
+                statusBox.style.border = '1px solid rgba(16, 185, 129, 0.3)';
+                statusBox.innerText = '✅ ' + data.message;
+                setTimeout(() => window.location.reload(), 1200);
+            } else {
+                statusBox.style.background = 'rgba(239, 68, 68, 0.15)';
+                statusBox.style.color = '#f87171';
+                statusBox.style.border = '1px solid rgba(239, 68, 68, 0.3)';
+                statusBox.innerText = 'Error: ' + data.error;
+            }
+        } catch (e) {
+            statusBox.style.display = 'block';
+            statusBox.style.color = '#f87171';
+            statusBox.innerText = 'Save failed: ' + e.message;
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i data-lucide="check"></i> Save & Activate Keys';
+            lucide.createIcons();
+        }
+    }
+</script>
+{% endblock %}

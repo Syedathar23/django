@@ -1,0 +1,382 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Top KPI Cards -->
+<section class="kpi-grid">
+    <div class="kpi-card" id="kpi-posts">
+        <div class="kpi-label-wrapper">
+            <span class="kpi-label">Analyzed Posts</span>
+            <div class="kpi-icon" style="background: rgba(6, 182, 212, 0.15); color: var(--cyan);">
+                <i data-lucide="message-square"></i>
+            </div>
+        </div>
+        <div class="kpi-value">{{ total_posts|default:"0" }}</div>
+        <div class="kpi-footer">
+            <span class="trend-badge trend-positive"><i data-lucide="arrow-up-right"></i> +18%</span>
+            <span>Across 4 platforms</span>
+        </div>
+    </div>
+
+    <div class="kpi-card" id="kpi-profiles">
+        <div class="kpi-label-wrapper">
+            <span class="kpi-label">Audience Nodes</span>
+            <div class="kpi-icon" style="background: rgba(139, 92, 246, 0.15); color: var(--purple);">
+                <i data-lucide="users"></i>
+            </div>
+        </div>
+        <div class="kpi-value">{{ total_profiles|default:"0" }}</div>
+        <div class="kpi-footer">
+            <span class="trend-badge trend-neutral">{{ active_communities }} Clusters</span>
+            <span>Graph nodes mapped</span>
+        </div>
+    </div>
+
+    <div class="kpi-card" id="kpi-sentiment">
+        <div class="kpi-label-wrapper">
+            <span class="kpi-label">Sentiment Index</span>
+            <div class="kpi-icon" style="background: rgba(16, 185, 129, 0.15); color: var(--emerald);">
+                <i data-lucide="trending-up"></i>
+            </div>
+        </div>
+        <div class="kpi-value">
+            {% if avg_sentiment >= 0 %}+{{ avg_sentiment }}{% else %}{{ avg_sentiment }}{% endif %}
+        </div>
+        <div class="kpi-footer">
+            <span class="trend-badge {% if avg_sentiment >= 0 %}trend-positive{% else %}trend-negative{% endif %}">
+                {% if avg_sentiment >= 0 %}Net Positive{% else %}Net Critical{% endif %}
+            </span>
+            <span>Scale: -1.0 to +1.0</span>
+        </div>
+    </div>
+
+    <div class="kpi-card" id="kpi-surging">
+        <div class="kpi-label-wrapper">
+            <span class="kpi-label">Surging Topics</span>
+            <div class="kpi-icon" style="background: rgba(244, 63, 94, 0.15); color: var(--rose);">
+                <i data-lucide="flame"></i>
+            </div>
+        </div>
+        <div class="kpi-value">{{ surging_topics }}</div>
+        <div class="kpi-footer">
+            <span class="trend-badge trend-negative">{{ alerts|length }} Alerts</span>
+            <span>Velocity > 3.0x</span>
+        </div>
+    </div>
+</section>
+
+<!-- Active Trend Alerts (if any) -->
+{% if alerts %}
+<section>
+    {% for alert in alerts %}
+    <div class="alert-strip {% if alert.severity == 'critical' %}alert-strip-critical{% elif alert.severity == 'warning' %}alert-strip-warning{% else %}alert-strip-info{% endif %}">
+        <i data-lucide="alert-triangle" style="color: {% if alert.severity == 'critical' %}var(--rose){% else %}var(--amber){% endif %}; margin-top: 2px;"></i>
+        <div style="flex: 1;">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+                <strong style="color: #fff; font-size: 13.5px;">{{ alert.title }}</strong>
+                <span style="font-size: 11px; color: var(--text-dim);">{{ alert.triggered_at|timesince }} ago</span>
+            </div>
+            <div style="font-size: 12.5px; color: #cbd5e1; margin-top: 2px;">{{ alert.message }}</div>
+        </div>
+        {% if alert.metric_value %}
+        <span class="badge badge-surging" style="margin-left: 10px;">{{ alert.metric_value }}</span>
+        {% endif %}
+    </div>
+    {% endfor %}
+</section>
+{% endif %}
+
+<!-- Charts Section: Timeline Multi-Platform Volume & Emotion Radar -->
+<section class="grid-2">
+    <!-- Multi-Platform Timeline Chart -->
+    <div class="glass-card">
+        <div class="card-header">
+            <div class="card-title-group">
+                <i data-lucide="activity" style="color: var(--cyan);"></i>
+                <div>
+                    <h2 class="card-title">Real-Time Ingestion Volume & Sentiment Shift</h2>
+                    <div class="card-subtitle">Multi-platform timeline tracking volume spikes & net emotional sentiment</div>
+                </div>
+            </div>
+        </div>
+        <div style="height: 280px; position: relative;">
+            <canvas id="timelineChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Emotion Breakdown Radar/Donut Chart -->
+    <div class="glass-card">
+        <div class="card-header">
+            <div class="card-title-group">
+                <i data-lucide="pie-chart" style="color: var(--purple);"></i>
+                <div>
+                    <h2 class="card-title">Multi-Dimensional Emotions</h2>
+                    <div class="card-subtitle">Granular patterns: Support, Opposition, Anxiety, Sarcasm</div>
+                </div>
+            </div>
+        </div>
+        <div style="height: 280px; position: relative;">
+            <canvas id="emotionChart"></canvas>
+        </div>
+    </div>
+</section>
+
+<!-- Emerging Topics & Key Influencer Leaderboard -->
+<section class="grid-2">
+    <!-- Emerging Topics -->
+    <div class="glass-card">
+        <div class="card-header">
+            <div class="card-title-group">
+                <i data-lucide="zap" style="color: var(--amber);"></i>
+                <div>
+                    <h2 class="card-title">Emerging Topics & Discussion Velocity</h2>
+                    <div class="card-subtitle">Distinguishing persistent discussions from rapidly emerging trends</div>
+                </div>
+            </div>
+            <a href="{% url 'analytics:trends' %}" class="btn btn-secondary" style="font-size: 11.5px; padding: 4px 10px;">View All</a>
+        </div>
+        <div class="table-responsive">
+            <table class="custom-table">
+                <thead>
+                    <tr>
+                        <th>Topic</th>
+                        <th>Momentum</th>
+                        <th>Velocity</th>
+                        <th>Sentiment</th>
+                        <th>Emotion</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in topics %}
+                    <tr>
+                        <td>
+                            <div style="font-weight: 600; color: #fff;">{{ t.title }}</div>
+                            <div style="font-size: 11px; color: var(--text-dim);">{{ t.category }} • {{ t.total_volume }} posts</div>
+                        </td>
+                        <td>
+                            <span class="badge badge-{{ t.momentum_trend }}">
+                                {{ t.get_momentum_trend_display }}
+                            </span>
+                        </td>
+                        <td>
+                            <div style="font-family: var(--font-heading); font-weight: 700; color: var(--cyan);">
+                                {{ t.velocity_score }}x
+                            </div>
+                        </td>
+                        <td>
+                            <span style="font-weight: 600; color: {% if t.avg_sentiment >= 0.1 %}var(--emerald){% elif t.avg_sentiment <= -0.1 %}var(--rose){% else %}var(--text-muted){% endif %};">
+                                {% if t.avg_sentiment >= 0 %}+{{ t.avg_sentiment }}{% else %}{{ t.avg_sentiment }}{% endif %}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="emotion-pill emotion-{{ t.dominant_emotion }}">
+                                {{ t.dominant_emotion }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" style="text-align: center; color: var(--text-dim);">No topics indexed yet.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Key Influencers Leaderboard -->
+    <div class="glass-card">
+        <div class="card-header">
+            <div class="card-title-group">
+                <i data-lucide="award" style="color: var(--cyan);"></i>
+                <div>
+                    <h2 class="card-title">Authority Influencers (PageRank)</h2>
+                    <div class="card-subtitle">Highest centrality nodes driving information cascades</div>
+                </div>
+            </div>
+            <a href="{% url 'analytics:network' %}" class="btn btn-secondary" style="font-size: 11.5px; padding: 4px 10px;">Full Graph</a>
+        </div>
+        <div class="table-responsive">
+            <table class="custom-table">
+                <thead>
+                    <tr>
+                        <th>Profile</th>
+                        <th>Followers</th>
+                        <th>PageRank</th>
+                        <th>Community</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in top_influencers %}
+                    <tr>
+                        <td>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <img src="{{ p.avatar_url }}" style="width: 26px; height: 26px; border-radius: 50%;" alt="">
+                                <div>
+                                    <div style="font-weight: 600; color: #fff;">@{{ p.username }}</div>
+                                    <div style="font-size: 11px; color: var(--text-dim);">{{ p.primary_interest }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td style="color: var(--text-muted);">{{ p.followers_count }}</td>
+                        <td>
+                            <div style="display: flex; align-items: center; gap: 6px;">
+                                <div style="width: 50px; background: rgba(255,255,255,0.08); height: 6px; border-radius: 3px; overflow: hidden;">
+                                    <div style="width: {{ p.influence_score }}%; background: var(--cyan); height: 100%;"></div>
+                                </div>
+                                <span style="font-weight: 700; color: #fff;">{{ p.influence_score|floatformat:0 }}</span>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge" style="background: rgba(139, 92, 246, 0.15); color: #c084fc;">
+                                Cluster #{{ p.community_id }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" style="text-align: center; color: var(--text-dim);">No profiles mapped.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+
+<!-- Latest Executive AI Brief -->
+{% if latest_brief %}
+<section class="glass-card" style="border-left: 4px solid var(--purple);">
+    <div class="card-header">
+        <div class="card-title-group">
+            <i data-lucide="sparkles" style="color: var(--purple);"></i>
+            <div>
+                <h2 class="card-title">{{ latest_brief.title }}</h2>
+                <div class="card-subtitle">Generated {{ latest_brief.generated_at|timesince }} ago • Timeframe: {{ latest_brief.timeframe }}</div>
+            </div>
+        </div>
+        <button class="btn btn-purple" onclick="generateAiBrief()" style="font-size: 12px; padding: 4px 12px;">Refresh AI Brief</button>
+    </div>
+    <div style="color: #cbd5e1; font-size: 13.5px; line-height: 1.6; white-space: pre-wrap;">
+        {{ latest_brief.summary_markdown }}
+    </div>
+</section>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Initialize Dashboard Charts
+    async function loadDashboardCharts() {
+        try {
+            const res = await fetch('/api/chart-data/');
+            const data = await res.json();
+
+            // 1. Timeline Chart
+            const ctxTimeline = document.getElementById('timelineChart').getContext('2d');
+            new Chart(ctxTimeline, {
+                type: 'line',
+                data: {
+                    labels: data.timeline_labels,
+                    datasets: [
+                        {
+                            label: 'X (Twitter)',
+                            data: data.volume_by_platform['twitter'] || [],
+                            borderColor: '#38bdf8',
+                            backgroundColor: 'rgba(56, 189, 248, 0.1)',
+                            borderWidth: 2,
+                            tension: 0.35,
+                            fill: true
+                        },
+                        {
+                            label: 'Telegram',
+                            data: data.volume_by_platform['telegram'] || [],
+                            borderColor: '#0284c7',
+                            backgroundColor: 'transparent',
+                            borderWidth: 2,
+                            tension: 0.35
+                        },
+                        {
+                            label: 'Reddit',
+                            data: data.volume_by_platform['reddit'] || [],
+                            borderColor: '#fb923c',
+                            backgroundColor: 'transparent',
+                            borderWidth: 2,
+                            tension: 0.35
+                        },
+                        {
+                            label: 'Sentiment Index',
+                            data: data.sentiment_timeline || [],
+                            borderColor: '#10b981',
+                            borderDash: [5, 5],
+                            borderWidth: 2,
+                            yAxisID: 'ySentiment',
+                            tension: 0.35
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { labels: { color: '#94a3b8', font: { family: 'Inter', size: 11 } } }
+                    },
+                    scales: {
+                        x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#64748b' } },
+                        y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#64748b' } },
+                        ySentiment: {
+                            position: 'right',
+                            min: -1.0,
+                            max: 1.0,
+                            grid: { display: false },
+                            ticks: { color: '#10b981' }
+                        }
+                    }
+                }
+            });
+
+            // 2. Emotion Breakdown Chart
+            const emotionCounts = {{ emotion_counts|safe }};
+            const ctxEmotion = document.getElementById('emotionChart').getContext('2d');
+            new Chart(ctxEmotion, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Support', 'Opposition', 'Excitement', 'Anxiety', 'Sarcasm', 'Curiosity', 'Neutral'],
+                    datasets: [{
+                        data: [
+                            emotionCounts.support || 0,
+                            emotionCounts.opposition || 0,
+                            emotionCounts.excitement || 0,
+                            emotionCounts.anxiety || 0,
+                            emotionCounts.sarcasm || 0,
+                            emotionCounts.curiosity || 0,
+                            emotionCounts.neutral || 0
+                        ],
+                        backgroundColor: [
+                            '#10b981', // Support (green)
+                            '#f43f5e', // Opposition (rose)
+                            '#f59e0b', // Excitement (amber)
+                            '#a855f7', // Anxiety (purple)
+                            '#ec4899', // Sarcasm (pink)
+                            '#06b6d4', // Curiosity (cyan)
+                            '#64748b'  // Neutral (grey)
+                        ],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'right', labels: { color: '#cbd5e1', font: { family: 'Inter', size: 11 } } }
+                    },
+                    cutout: '68%'
+                }
+            });
+        } catch (err) {
+            console.error('Chart load error:', err);
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', loadDashboardCharts);
+</script>
+{% endblock %}

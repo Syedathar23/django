@@ -1,0 +1,240 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Graph Header & Control Bar -->
+<section class="glass-card" style="padding: 16px 20px;">
+    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px;">
+        <div class="card-title-group">
+            <i data-lucide="share-2" style="color: var(--cyan);"></i>
+            <div>
+                <h2 class="card-title">Directed Social Interaction & Influence Topology</h2>
+                <div class="card-subtitle">PageRank authority, betweenness centrality brokers & modular community clusters</div>
+            </div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <label class="form-label" style="margin: 0; color: var(--text-dim);">Filter Tribe:</label>
+            <select class="form-select" id="filter-community" onchange="loadNetworkGraph()" style="padding: 6px 12px; font-size: 12.5px;">
+                <option value="all">All Communities</option>
+                {% for c in communities %}
+                <option value="{{ c }}">Community Tribe #{{ c }}</option>
+                {% endfor %}
+            </select>
+            <button class="btn btn-secondary" onclick="networkInstance && networkInstance.fit()" style="font-size: 12px; padding: 6px 12px;">
+                <i data-lucide="maximize-2"></i> Center
+            </button>
+        </div>
+    </div>
+</section>
+
+<!-- Main Visualizer Area: Network Canvas + Node Inspector -->
+<section style="display: grid; grid-template-columns: 1fr 340px; gap: 20px;">
+    <!-- Interactive Vis.js Network Canvas -->
+    <div class="glass-card" style="padding: 0; overflow: hidden; position: relative;">
+        <div id="network-canvas"></div>
+        <div style="position: absolute; bottom: 16px; left: 16px; background: rgba(11, 17, 32, 0.85); backdrop-filter: blur(8px); padding: 8px 14px; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle); font-size: 11.5px; color: var(--text-dim); display: flex; gap: 14px;">
+            <span><strong style="color: #38bdf8;">→</strong> Mentions</span>
+            <span><strong style="color: #34d399;">→</strong> Reposts</span>
+            <span><strong style="color: #a78bfa;">→</strong> Replies</span>
+            <span><strong style="color: #f59e0b;">→</strong> Quotes</span>
+        </div>
+    </div>
+
+    <!-- Node Inspector Sidebar -->
+    <div class="glass-card" id="node-inspector">
+        <div class="card-header">
+            <div class="card-title-group">
+                <i data-lucide="user-check" style="color: var(--cyan);"></i>
+                <h3 class="card-title">Node Inspector</h3>
+            </div>
+        </div>
+        <div id="inspector-content">
+            <div style="text-align: center; color: var(--text-dim); padding: 40px 10px;">
+                <i data-lucide="mouse-pointer" style="width: 32px; height: 32px; margin-bottom: 10px; color: var(--text-dim);"></i>
+                <p>Click on any user node in the network to inspect authority score, betweenness, and community role.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Information Propagation Cascade Visualizer -->
+<section class="glass-card" style="margin-top: 10px;">
+    <div class="card-header">
+        <div class="card-title-group">
+            <i data-lucide="git-merge" style="color: var(--purple);"></i>
+            <div>
+                <h2 class="card-title">Information Propagation Cascade Tracer</h2>
+                <div class="card-subtitle">Trace how viral narratives and posts spread across parent/child reshares and replies</div>
+            </div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <select class="form-select" id="select-viral-post" onchange="traceCascade(this.value)" style="max-width: 320px; font-size: 12px; padding: 6px 10px;">
+                {% for p in viral_posts %}
+                <option value="{{ p.id }}">@{{ p.author.username }}: {{ p.content|truncatechars:45 }} ({{ p.reposts_count }} reshares)</option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+
+    <div id="cascade-display-area" style="min-height: 180px; padding: 10px 0;">
+        <p style="color: var(--text-dim); text-align: center;">Select a viral post above to view cascade lineage...</p>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let networkInstance = null;
+
+    async function loadNetworkGraph() {
+        const community = document.getElementById('filter-community').value;
+        const container = document.getElementById('network-canvas');
+        
+        try {
+            const res = await fetch(`/api/network-data/?community=${community}&limit=80`);
+            const data = await res.json();
+
+            const nodes = new vis.DataSet(data.nodes);
+            const edges = new vis.DataSet(data.edges);
+
+            const graphData = { nodes: nodes, edges: edges };
+            const options = {
+                nodes: {
+                    shape: 'dot',
+                    scaling: { min: 14, max: 45 },
+                    font: { color: '#f8fafc', face: 'Inter', size: 12 }
+                },
+                edges: {
+                    arrows: { to: { enabled: true, scaleFactor: 0.6 } },
+                    smooth: { type: 'continuous' }
+                },
+                physics: {
+                    solver: 'forceAtlas2Based',
+                    forceAtlas2Based: {
+                        gravitationalConstant: -50,
+                        centralGravity: 0.01,
+                        springLength: 90,
+                        springConstant: 0.08
+                    },
+                    maxVelocity: 50,
+                    minVelocity: 0.1,
+                    stabilization: { iterations: 120 }
+                },
+                interaction: {
+                    hover: true,
+                    tooltipDelay: 150
+                }
+            };
+
+            networkInstance = new vis.Network(container, graphData, options);
+
+            // Click listener for Node Inspector
+            networkInstance.on('click', function(params) {
+                if (params.nodes.length > 0) {
+                    const nodeId = params.nodes[0];
+                    const selectedNode = data.nodes.find(n => n.id === nodeId);
+                    if (selectedNode) {
+                        displayNodeDetails(selectedNode.details);
+                    }
+                }
+            });
+
+        } catch (err) {
+            console.error('Failed to load network graph:', err);
+        }
+    }
+
+    function displayNodeDetails(d) {
+        const inspector = document.getElementById('inspector-content');
+        inspector.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+                <img src="https://api.dicebear.com/7.x/identicon/svg?seed=${d.username}" style="width: 44px; height: 44px; border-radius: 50%; border: 2px solid var(--cyan);" />
+                <div>
+                    <h4 style="color: #fff; font-size: 15px;">@${d.username}</h4>
+                    <span class="badge badge-${d.platform}">${d.platform.toUpperCase()}</span>
+                </div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 10px; font-size: 13px;">
+                <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-subtle); padding-bottom: 6px;">
+                    <span style="color: var(--text-dim);">PageRank Authority:</span>
+                    <strong style="color: var(--cyan); font-size: 14px;">${d.influence_score}/100</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-subtle); padding-bottom: 6px;">
+                    <span style="color: var(--text-dim);">Betweenness (Bridge):</span>
+                    <strong style="color: var(--purple);">${d.betweenness}</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-subtle); padding-bottom: 6px;">
+                    <span style="color: var(--text-dim);">Followers:</span>
+                    <strong style="color: #fff;">${d.followers.toLocaleString()}</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-subtle); padding-bottom: 6px;">
+                    <span style="color: var(--text-dim);">In / Out Degree:</span>
+                    <strong style="color: #cbd5e1;">${d.in_degree} in / ${d.out_degree} out</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-subtle); padding-bottom: 6px;">
+                    <span style="color: var(--text-dim);">Interest Segment:</span>
+                    <strong style="color: #cbd5e1;">${d.interest}</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-subtle); padding-bottom: 6px;">
+                    <span style="color: var(--text-dim);">Community Tribe:</span>
+                    <span class="badge" style="background: rgba(139,92,246,0.2); color: #c084fc;">Cluster #${d.community_id}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                    <span style="color: var(--text-dim);">Country / Region:</span>
+                    <strong style="color: #cbd5e1;">${d.country}</strong>
+                </div>
+            </div>
+        `;
+    }
+
+    async function traceCascade(postId) {
+        if (!postId) return;
+        const area = document.getElementById('cascade-display-area');
+        area.innerHTML = '<p style="color: var(--text-dim); text-align: center;">Tracing propagation branches...</p>';
+
+        try {
+            const res = await fetch(`/api/cascade-data/${postId}/`);
+            const data = await res.json();
+
+            let html = `
+                <div style="background: rgba(6, 182, 212, 0.08); border: 1px solid rgba(6, 182, 212, 0.25); border-radius: var(--radius-sm); padding: 14px; margin-bottom: 16px;">
+                    <div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--cyan); margin-bottom: 6px;">
+                        <span>SEED ORIGIN • @${data.seed.author}</span>
+                        <span>${data.seed.total_shares} Shares • ${data.cascade_size} Nodes Mapped</span>
+                    </div>
+                    <div style="color: #fff; font-size: 14px; font-weight: 500;">"${data.seed.content}"</div>
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap: 8px; position: relative; padding-left: 18px; border-left: 2px solid rgba(139, 92, 246, 0.3);">
+            `;
+
+            data.cascade_nodes.slice(1).forEach(node => {
+                const isGrandchild = node.level === 2;
+                html += `
+                    <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 10px 14px; margin-left: ${isGrandchild ? '28px' : '0'};">
+                        <div style="display: flex; align-items: center; justify-content: space-between; font-size: 12px; margin-bottom: 4px;">
+                            <strong style="color: ${isGrandchild ? '#f59e0b' : '#a78bfa'};">${node.label} (${node.type || 'reaction'})</strong>
+                            <span class="emotion-pill emotion-${node.emotion}">${node.emotion}</span>
+                        </div>
+                        <div style="color: #cbd5e1; font-size: 12.5px;">${node.content}</div>
+                    </div>
+                `;
+            });
+
+            html += `</div>`;
+            area.innerHTML = html;
+
+        } catch (err) {
+            area.innerHTML = `<p style="color: var(--rose);">Failed to trace cascade: ${err.message}</p>`;
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        loadNetworkGraph();
+        const firstPost = document.getElementById('select-viral-post');
+        if (firstPost && firstPost.value) {
+            traceCascade(firstPost.value);
+        }
+    });
+</script>
+{% endblock %}

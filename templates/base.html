@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMA.AI — {{ page_title|default:"Social Media Audience Intelligence" }}</title>
+    <meta name="description" content="AI-Powered Social Media Intelligence, Multi-dimensional Sentiment, Emerging Trend Detection & Social Network Influence Platform">
+    
+    <!-- Design System CSS -->
+    <link rel="stylesheet" href="/static/css/style.css">
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    
+    <!-- Vis.js Network -->
+    <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <a href="{% url 'analytics:home' %}" class="brand-wrapper" style="text-decoration: none;">
+                <div class="brand-logo-icon">S</div>
+                <div>
+                    <div class="brand-title">SMA.AI</div>
+                    <div style="font-size: 11px; color: var(--text-dim);">Audience Intelligence</div>
+                </div>
+                <span class="brand-badge">PRO</span>
+            </a>
+
+            <div class="nav-section-title">Core Intelligence</div>
+            <ul class="nav-menu">
+                <li>
+                    <a href="{% url 'analytics:home' %}" class="nav-link {% if active_tab == 'home' %}active{% endif %}" id="nav-home">
+                        <i data-lucide="search"></i>
+                        <span>Topic Search & Report</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'analytics:dashboard' %}" class="nav-link {% if active_tab == 'dashboard' %}active{% endif %}" id="nav-dashboard">
+                        <i data-lucide="layout-dashboard"></i>
+                        <span>Executive Dashboard</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'analytics:sentiment' %}" class="nav-link {% if active_tab == 'sentiment' %}active{% endif %}" id="nav-sentiment">
+                        <i data-lucide="smile"></i>
+                        <span>Sentiment & Demographics</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'analytics:trends' %}" class="nav-link {% if active_tab == 'trends' %}active{% endif %}" id="nav-trends">
+                        <i data-lucide="trending-up"></i>
+                        <span>Emerging Trends</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'analytics:network' %}" class="nav-link {% if active_tab == 'network' %}active{% endif %}" id="nav-network">
+                        <i data-lucide="share-2"></i>
+                        <span>Network & Influence</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'analytics:stream' %}" class="nav-link {% if active_tab == 'stream' %}active{% endif %}" id="nav-stream">
+                        <i data-lucide="activity"></i>
+                        <span>Live Stream & Ingestion</span>
+                    </a>
+                </li>
+            </ul>
+
+            <div class="nav-section-title" style="margin-top: 24px;">Surveillance & Ops</div>
+            <ul class="nav-menu">
+                <li>
+                    <a href="javascript:void(0)" onclick="openModal('modal-ingest')" class="nav-link" id="nav-quick-ingest">
+                        <i data-lucide="plus-circle"></i>
+                        <span>Ingest Live Post</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="javascript:void(0)" onclick="generateAiBrief()" class="nav-link" id="nav-quick-brief">
+                        <i data-lucide="file-text"></i>
+                        <span>Generate AI Brief</span>
+                    </a>
+                </li>
+            </ul>
+
+            <div class="sidebar-footer">
+                <div class="pulse-status">
+                    <span class="status-indicator-dot"></span>
+                    <span>Multi-Platform Pipeline Active</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Workspace -->
+        <div class="main-wrapper">
+            <!-- Topbar -->
+            <header class="topbar">
+                <div class="topbar-left">
+                    <h1 class="page-heading">{{ page_title }}</h1>
+                    <div class="page-subtitle">Unified Real-Time Social Media AI Analytics Engine</div>
+                </div>
+                <div class="topbar-actions">
+                    <button class="btn btn-secondary" onclick="openModal('modal-ingest')" id="btn-top-ingest">
+                        <i data-lucide="plus"></i> Ingest Post
+                    </button>
+                    <button class="btn btn-purple" onclick="generateAiBrief()" id="btn-top-brief">
+                        <i data-lucide="sparkles"></i> AI Synthesis
+                    </button>
+                    <button class="btn btn-primary" onclick="simulateLiveSurge()" id="btn-top-surge">
+                        <i data-lucide="zap"></i> Simulate Surge
+                    </button>
+                </div>
+            </header>
+
+            <!-- Main Content Slot -->
+            <main class="content-body">
+                {% block content %}{% endblock %}
+            </main>
+        </div>
+    </div>
+
+    <!-- Modal: Ingest Post -->
+    <div class="modal-overlay" id="modal-ingest">
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <div class="card-title-group">
+                    <i data-lucide="radio" style="color: var(--cyan);"></i>
+                    <h3 class="card-title">Ingest Live Social Media Payload</h3>
+                </div>
+                <button class="modal-close-btn" onclick="closeModal('modal-ingest')">&times;</button>
+            </div>
+            <form id="form-ingest-post" onsubmit="handleIngestSubmit(event)">
+                <div class="grid-2-even">
+                    <div class="form-group">
+                        <label class="form-label">Platform</label>
+                        <select class="form-select" id="ingest-platform">
+                            <option value="twitter">X (Twitter)</option>
+                            <option value="telegram">Telegram</option>
+                            <option value="reddit">Reddit</option>
+                            <option value="youtube">YouTube</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Author Username</label>
+                        <input type="text" class="form-input" id="ingest-username" placeholder="e.g. quantum_engineer" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Author Bio / Profile Description</label>
+                    <input type="text" class="form-input" id="ingest-bio" placeholder="e.g. AI systems engineer in San Francisco researching multi-agent autonomy">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Post / Comment Content</label>
+                    <textarea class="form-textarea" id="ingest-content" placeholder="Type or paste post text with hashtags #AI and mentions @user..." required></textarea>
+                </div>
+                <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 14px;">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('modal-ingest')">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="btn-submit-ingest">
+                        <i data-lucide="cpu"></i> Analyze & Ingest
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: AI Executive Brief -->
+    <div class="modal-overlay" id="modal-brief">
+        <div class="modal-dialog" style="max-width: 680px;">
+            <div class="modal-header">
+                <div class="card-title-group">
+                    <i data-lucide="sparkles" style="color: var(--purple);"></i>
+                    <h3 class="card-title" id="brief-modal-title">AI Audience Intelligence Synthesis</h3>
+                </div>
+                <button class="modal-close-btn" onclick="closeModal('modal-brief')">&times;</button>
+            </div>
+            <div id="brief-modal-body" style="color: #cbd5e1; font-size: 13.5px; line-height: 1.6; max-height: 60vh; overflow-y: auto; padding-right: 6px;">
+                <p>Generating real-time multi-dimensional intelligence synthesis...</p>
+            </div>
+            <div style="display: flex; justify-content: flex-end; margin-top: 20px;">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('modal-brief')">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Global Scripts -->
+    <script>
+        lucide.createIcons();
+
+        function openModal(id) {
+            document.getElementById(id).classList.add('active');
+        }
+        function closeModal(id) {
+            document.getElementById(id).classList.remove('active');
+        }
+
+        async function simulateLiveSurge() {
+            const btn = document.getElementById('btn-top-surge');
+            btn.disabled = true;
+            btn.innerHTML = '<i data-lucide="loader"></i> Surging...';
+            lucide.createIcons();
+            try {
+                const res = await fetch('/api/simulate-surge/', { method: 'POST' });
+                const data = await res.json();
+                alert(`🚀 Live Surge Ingested!\nTopic: ${data.topic}\nNew Posts: ${data.posts_generated.length}\nRecalculated PageRank & Trend Velocity!`);
+                window.location.reload();
+            } catch (err) {
+                alert('Surge failed: ' + err.message);
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        async function handleIngestSubmit(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btn-submit-ingest');
+            btn.disabled = true;
+            btn.innerText = 'Processing NLP...';
+
+            const payload = {
+                platform: document.getElementById('ingest-platform').value,
+                username: document.getElementById('ingest-username').value,
+                bio: document.getElementById('ingest-bio').value,
+                content: document.getElementById('ingest-content').value,
+            };
+
+            try {
+                const res = await fetch('/api/ingest-post/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    alert(`✅ Ingested Successfully!\nSentiment: ${data.sentiment} (${data.sentiment_score})\nDominant Emotion: ${data.emotion}`);
+                    closeModal('modal-ingest');
+                    window.location.reload();
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            } catch (err) {
+                alert('Submission error: ' + err.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i data-lucide="cpu"></i> Analyze & Ingest';
+                lucide.createIcons();
+            }
+        }
+
+        async function generateAiBrief() {
+            openModal('modal-brief');
+            const bodyDiv = document.getElementById('brief-modal-body');
+            bodyDiv.innerHTML = '<div style="text-align: center; padding: 30px;"><div class="status-indicator-dot" style="margin: 0 auto 10px;"></div><p>Synthesizing multi-platform timeline, emotions & network clusters...</p></div>';
+
+            try {
+                const res = await fetch('/api/generate-brief/', { method: 'POST' });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    document.getElementById('brief-modal-title').innerText = data.title;
+                    bodyDiv.innerHTML = `<div style="white-space: pre-wrap;">${data.summary}</div>`;
+                } else {
+                    bodyDiv.innerText = 'Failed to generate brief: ' + data.error;
+                }
+            } catch (err) {
+                bodyDiv.innerText = 'Network error: ' + err.message;
+            }
+        }
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

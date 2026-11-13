@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Header Overview Banner -->
+<section class="glass-card" style="border-left: 4px solid var(--cyan);">
+    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px;">
+        <div>
+            <h2 class="card-title" style="font-size: 17px;">Real-Time Topic Velocity & Trend Engine</h2>
+            <div class="card-subtitle" style="margin-top: 4px;">
+                Using continuous TF-IDF n-gram extraction, baseline comparison & engagement velocity ($V = \frac{\Delta \text{Vol}}{\Delta t} \times \log(1+\text{Eng})$) to detect breakout narratives.
+            </div>
+        </div>
+        <div style="display: flex; gap: 8px;">
+            <span class="badge badge-surging">🔥 Surging: > 3.0x</span>
+            <span class="badge badge-steady">⚡ Steady: 1.0x - 3.0x</span>
+            <span class="badge badge-declining">📉 Declining: < 1.0x</span>
+        </div>
+    </div>
+</section>
+
+<!-- Extracted Emerging N-Grams & Keywords (TF-IDF) -->
+<section class="glass-card">
+    <div class="card-header">
+        <div class="card-title-group">
+            <i data-lucide="hash" style="color: var(--cyan);"></i>
+            <div>
+                <h2 class="card-title">Extracted High-Velocity Keywords & N-Grams</h2>
+                <div class="card-subtitle">Automated statistical TF-IDF term salience across recent post streams</div>
+            </div>
+        </div>
+    </div>
+    <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+        {% for kw in emerging_keywords %}
+        <div style="background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-subtle); padding: 8px 14px; border-radius: var(--radius-sm); display: flex; align-items: center; gap: 8px; transition: var(--transition-fast);">
+            <span style="font-weight: 600; color: #fff;">#{{ kw.term }}</span>
+            <span style="font-size: 11px; padding: 2px 6px; background: rgba(6, 182, 212, 0.15); color: var(--cyan); border-radius: 4px; font-weight: 700;">
+                {{ kw.score }}
+            </span>
+        </div>
+        {% empty %}
+        <div style="color: var(--text-dim);">No significant n-grams extracted yet.</div>
+        {% endfor %}
+    </div>
+</section>
+
+<!-- Active Alert Operations Center -->
+<section class="glass-card">
+    <div class="card-header">
+        <div class="card-title-group">
+            <i data-lucide="bell-ring" style="color: var(--rose);"></i>
+            <div>
+                <h2 class="card-title">Automated Trend Alerts & Anomaly Surveillance</h2>
+                <div class="card-subtitle">Threshold violations for viral spikes, sentiment flips, and resistance bursts</div>
+            </div>
+        </div>
+        <span class="badge badge-surging">{{ alerts|length }} Logged Events</span>
+    </div>
+
+    <div class="table-responsive">
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th>Severity</th>
+                    <th>Alert Type</th>
+                    <th>Associated Topic</th>
+                    <th>Incident Details</th>
+                    <th>Triggered</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for a in alerts %}
+                <tr>
+                    <td>
+                        <span class="badge {% if a.severity == 'critical' %}badge-surging{% elif a.severity == 'warning' %}badge-steady{% else %}badge-neutral{% endif %}">
+                            {{ a.get_severity_display }}
+                        </span>
+                    </td>
+                    <td><strong style="color: #fff;">{{ a.get_alert_type_display }}</strong></td>
+                    <td>
+                        <span style="color: var(--cyan); font-weight: 500;">{{ a.topic.title }}</span>
+                    </td>
+                    <td style="color: #cbd5e1; max-width: 380px;">
+                        <div>{{ a.message }}</div>
+                        {% if a.metric_value %}
+                        <div style="font-size: 11px; color: var(--amber); margin-top: 3px;"><strong>Metric:</strong> {{ a.metric_value }}</div>
+                        {% endif %}
+                    </td>
+                    <td style="color: var(--text-dim); white-space: nowrap;">
+                        {{ a.triggered_at|timesince }} ago
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" style="text-align: center; color: var(--text-dim);">All trends within nominal parameters.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<!-- Deep Topic Profiles Grid -->
+<section class="grid-2-even">
+    {% for t in topics %}
+    <div class="glass-card" style="display: flex; flex-direction: column; justify-content: space-between;">
+        <div>
+            <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 12px;">
+                <div>
+                    <h3 style="font-family: var(--font-heading); font-size: 16px; color: #fff;">{{ t.title }}</h3>
+                    <div style="font-size: 12px; color: var(--text-dim); margin-top: 2px;">{{ t.category }}</div>
+                </div>
+                <span class="badge badge-{{ t.momentum_trend }}">
+                    {{ t.get_momentum_trend_display }}
+                </span>
+            </div>
+            
+            <p style="color: #cbd5e1; font-size: 13px; line-height: 1.5; margin-bottom: 14px;">
+                {{ t.description }}
+            </p>
+
+            <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px;">
+                {% for kw in t.keywords %}
+                <span style="font-size: 11px; padding: 2px 7px; background: rgba(255,255,255,0.05); color: var(--text-muted); border-radius: 4px;">
+                    #{{ kw }}
+                </span>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div style="border-top: 1px solid var(--border-subtle); padding-top: 12px; display: flex; align-items: center; justify-content: space-between; font-size: 12px;">
+            <div>
+                <span style="color: var(--text-dim);">Velocity:</span>
+                <strong style="color: var(--cyan); font-size: 14px; margin-left: 4px;">{{ t.velocity_score }}x</strong>
+            </div>
+            <div>
+                <span style="color: var(--text-dim);">Net Sentiment:</span>
+                <strong style="margin-left: 4px; color: {% if t.avg_sentiment >= 0.1 %}var(--emerald){% elif t.avg_sentiment <= -0.1 %}var(--rose){% else %}var(--text-muted){% endif %};">
+                    {% if t.avg_sentiment >= 0 %}+{{ t.avg_sentiment }}{% else %}{{ t.avg_sentiment }}{% endif %}
+                </strong>
+            </div>
+            <div>
+                <span class="emotion-pill emotion-{{ t.dominant_emotion }}">
+                    {{ t.dominant_emotion }}
+                </span>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</section>
+{% endblock %}
